@@ -7,7 +7,7 @@ on:
   # Commits feitos com o GITHUB_TOKEN NÃO disparam o "push" acima,
   # por isso reagimos ao fim do workflow "Add media".
   workflow_run:
-    workflows: ["Add media", "Remove media"]
+    workflows: ["Add media", "Remove media", "Edit media"]
     types: [completed]
   workflow_dispatch:
 
