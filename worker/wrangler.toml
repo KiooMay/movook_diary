@@ -1,8 +1,0 @@
-name = "mobook-api"
-main = "src/index.js"
-compatibility_date = "2025-10-01"
-
-[vars]
-GITHUB_OWNER = "KiooMay"
-GITHUB_REPO = "mobook_diary"
-ALLOWED_ORIGIN = "https://kioomay.github.io"
