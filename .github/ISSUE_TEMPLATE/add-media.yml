@@ -1,0 +1,52 @@
+name: Adicionar à biblioteca
+description: Adiciona um ou vários filmes, séries, animes ou livros
+title: "[Adicionar] "
+labels: ["add-media"]
+body:
+  - type: dropdown
+    id: type
+    attributes:
+      label: Tipo
+      description: Todos os títulos desta issue têm de ser do mesmo tipo.
+      options:
+        - Filme
+        - Série
+        - Anime
+        - Livro
+    validations:
+      required: true
+  - type: textarea
+    id: titles
+    attributes:
+      label: Títulos (um por linha)
+      description: |
+        Máximo 30. Para afinar um título, acrescenta o ano ou o ID depois de "|".
+        Exemplos: `Dune | 2021` · `Dune | tmdb:438631` · `Frieren | anilist:154587`
+      placeholder: |
+        Frieren
+        Dungeon Meshi
+        Dune | 2021
+    validations:
+      required: true
+  - type: dropdown
+    id: status
+    attributes:
+      label: Estado
+      description: Aplica-se a todos os títulos.
+      options:
+        - Quero ver/ler
+        - A ver/ler
+        - Concluído
+        - Abandonado
+    validations:
+      required: true
+  - type: input
+    id: rating
+    attributes:
+      label: Nota (opcional)
+      description: De 0 a 10. Só é aplicada quando adicionas um único título.
+  - type: textarea
+    id: review
+    attributes:
+      label: Review (opcional)
+      description: Só é aplicada quando adicionas um único título.
