@@ -1,0 +1,60 @@
+name: Remove media
+
+on:
+  issues:
+    types: [opened]
+
+permissions:
+  contents: write
+  issues: write
+
+# Mesmo grupo do "Add media": nunca correm em simultâneo (evita conflitos de push)
+concurrency:
+  group: add-media
+  cancel-in-progress: false
+
+jobs:
+  remove:
+    if: >-
+      github.event.issue.user.login == github.repository_owner &&
+      contains(github.event.issue.labels.*.name, 'remove-media')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Remove entries
+        env:
+          ISSUE_BODY: ${{ github.event.issue.body }}
+        run: node scripts/remove-media.mjs
+
+      - name: Commit
+        run: |
+          git config user.name "media-bot"
+          git config user.email "media-bot@users.noreply.github.com"
+          git add -A media
+          if ! git diff --cached --quiet; then
+            git commit -F /tmp/commit-msg.txt
+            git pull --rebase
+            git push
+          fi
+
+      - name: Comment and close issue
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+        run: |
+          gh issue comment "$ISSUE_NUMBER" --body-file /tmp/comment.md
+          gh issue close "$ISSUE_NUMBER"
+
+      - name: Report failure
+        if: failure()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          gh issue comment "$ISSUE_NUMBER" --body "❌ Algo correu mal. Vê os logs: $RUN_URL"
