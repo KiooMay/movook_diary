@@ -1,0 +1,24 @@
+name: Remover da biblioteca
+description: Remove um ou vários itens da biblioteca
+title: "[Remover] "
+labels: ["remove-media"]
+body:
+  - type: textarea
+    id: items
+    attributes:
+      label: Itens a remover (um por linha)
+      description: |
+        Usa o ID do item (ex. `anime/frieren-2023`, visível no ficheiro em `media/`) ou o título exato.
+        Se o título for ambíguo, nada é apagado e o bot lista as opções.
+      placeholder: |
+        anime/frieren-2023
+        Dune
+    validations:
+      required: true
+  - type: checkboxes
+    id: confirm
+    attributes:
+      label: Confirmação
+      options:
+        - label: Confirmo que quero remover estes itens (o histórico do Git permite recuperá-los)
+          required: true
