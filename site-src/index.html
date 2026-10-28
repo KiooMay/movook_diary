@@ -1,0 +1,219 @@
+<!doctype html>
+<html lang="pt">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#14141a">
+<title>Mobook Diary</title>
+<style>
+:root{--bg:#f6f5f2;--card:#fff;--text:#1c1c22;--muted:#6b6b76;--line:#e2e0da;--accent:#5b4bdb;--star:#e0a100;color-scheme:light}
+@media (prefers-color-scheme:dark){:root{--bg:#14141a;--card:#1e1e26;--text:#ececf1;--muted:#9a9aa8;--line:#2e2e3a;--accent:#8b7dff;--star:#f2b827;color-scheme:dark}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:16px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom)}
+header{display:flex;flex-wrap:wrap;gap:.75rem;justify-content:space-between;align-items:center;padding:1rem 1rem .5rem;max-width:1100px;margin:auto}
+h1{font-size:1.3rem;margin:0}
+button,select,input{font:inherit;color:inherit}
+nav button,.tabs button{background:none;border:1px solid var(--line);border-radius:999px;padding:.3rem .9rem;cursor:pointer}
+nav button.on,.tabs button.on{background:var(--accent);border-color:var(--accent);color:#fff}
+main{max-width:1100px;margin:auto;padding:0 1rem 3rem}
+.tabs{display:flex;gap:.5rem;overflow-x:auto;padding:.5rem 0}
+.tabs button{white-space:nowrap}
+.controls{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:.5rem;margin:.5rem 0 1rem}
+.controls input,.controls select{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:.5rem .7rem;width:100%}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:1rem}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;overflow:hidden;padding:0;text-align:left;cursor:pointer;display:flex;flex-direction:column}
+.cover{aspect-ratio:2/3;background:var(--line);position:relative;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:2rem}
+.cover img{width:100%;height:100%;object-fit:cover;display:block}
+.badge{position:absolute;top:6px;right:6px;background:rgba(0,0,0,.75);color:#fff;border-radius:8px;padding:0 .4rem;font-size:.8rem}
+.badge b{color:var(--star)}
+.info{padding:.5rem .6rem .6rem}
+.info strong{display:block;font-size:.92rem;line-height:1.25}
+.info small{color:var(--muted)}
+dialog{border:1px solid var(--line);border-radius:16px;background:var(--card);color:var(--text);max-width:640px;width:calc(100% - 2rem);padding:0;max-height:90vh}
+dialog::backdrop{background:rgba(0,0,0,.55)}
+.m{padding:1.2rem;display:grid;gap:.8rem}
+.m .top{display:flex;gap:1rem}
+.m .top img{width:110px;border-radius:8px;align-self:flex-start}
+.m h2{margin:0;font-size:1.25rem}
+.chips{display:flex;flex-wrap:wrap;gap:.3rem}
+.chip{border:1px solid var(--line);border-radius:999px;padding:0 .6rem;font-size:.8rem;color:var(--muted)}
+.txt{white-space:pre-wrap}
+.m h3{margin:.2rem 0 0;font-size:.85rem;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)}
+.close{justify-self:end;background:none;border:1px solid var(--line);border-radius:8px;padding:.2rem .7rem;cursor:pointer}
+a{color:var(--accent)}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:.8rem}
+.stat{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:1rem}
+.stat b{font-size:1.6rem;display:block}
+.stat span,.muted{color:var(--muted);font-size:.85rem}
+.bar{display:grid;grid-template-columns:110px 1fr 30px;gap:.5rem;align-items:center;margin:.3rem 0;font-size:.9rem}
+.bar i{display:block;height:10px;border-radius:6px;background:var(--accent)}
+h2.sec{font-size:1rem;margin:1.5rem 0 .5rem}
+</style>
+</head>
+<body>
+<header>
+  <h1>📚 Mobook Diary</h1>
+  <nav>
+    <button data-view="library" class="on">Biblioteca</button>
+    <button data-view="stats">Estatísticas</button>
+  </nav>
+</header>
+<main>
+  <section id="library">
+    <div class="tabs" id="types"></div>
+    <div class="controls">
+      <input id="q" type="search" placeholder="Pesquisar título, autor, tag…" aria-label="Pesquisar">
+      <select id="status" aria-label="Estado"></select>
+      <select id="genre" aria-label="Género"></select>
+      <select id="sort" aria-label="Ordenar"></select>
+    </div>
+    <div id="grid" class="grid"></div>
+    <p id="empty" class="muted" hidden>Nada encontrado.</p>
+  </section>
+  <section id="stats" hidden></section>
+</main>
+<dialog id="modal"></dialog>
+
+<script>
+const TYPES = { all: 'Tudo', movie: 'Filmes', series: 'Séries', anime: 'Animes', book: 'Livros' };
+const STATUS = { planned: 'Quero ver/ler', 'in-progress': 'A ver/ler', done: 'Concluído', dropped: 'Abandonado' };
+const SORTS = {
+  added: ['Mais recentes', (a, b) => (b.date_added || '').localeCompare(a.date_added || '')],
+  rating: ['Melhor nota', (a, b) => (b.rating ?? -1) - (a.rating ?? -1)],
+  year: ['Ano', (a, b) => (b.year || 0) - (a.year || 0)],
+  title: ['Título A–Z', (a, b) => (a.title || '').localeCompare(b.title || '', 'pt')],
+};
+const ICON = { movie: '🎬', series: '📺', anime: '🌸', book: '📖' };
+const $ = (s) => document.querySelector(s);
+const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const safeUrl = (u) => (/^https?:\/\//i.test(u || '') ? esc(u) : '');
+const fmtRating = (r) => (r == null ? '' : Number.isInteger(r) ? r : r.toFixed(1));
+
+let items = [];
+const state = { type: 'all', q: '', status: '', genre: '', sort: 'added' };
+
+function lengthText(l) {
+  if (!l) return '';
+  const p = [];
+  if (l.runtime_min) p.push(`${l.runtime_min} min`);
+  if (l.seasons) p.push(`${l.seasons} temp.`);
+  if (l.episodes) p.push(`${l.episodes} ep.`);
+  if (l.pages) p.push(`${l.pages} págs.`);
+  return p.join(' · ');
+}
+
+function fillSelect(el, entries) {
+  el.innerHTML = entries.map(([v, l]) => `<option value="${esc(v)}">${esc(l)}</option>`).join('');
+}
+
+function setupControls() {
+  $('#types').innerHTML = Object.entries(TYPES)
+    .map(([k, v]) => `<button data-type="${k}" class="${k === state.type ? 'on' : ''}">${v}</button>`).join('');
+  fillSelect($('#status'), [['', 'Todos os estados'], ...Object.entries(STATUS)]);
+  const genres = [...new Set(items.flatMap((i) => i.genres))].sort((a, b) => a.localeCompare(b, 'pt'));
+  fillSelect($('#genre'), [['', 'Todos os géneros'], ...genres.map((g) => [g, g])]);
+  fillSelect($('#sort'), Object.entries(SORTS).map(([k, v]) => [k, v[0]]));
+}
+
+function filtered() {
+  const q = state.q.trim().toLowerCase();
+  return items
+    .filter((i) => state.type === 'all' || i.type === state.type)
+    .filter((i) => !state.status || i.status === state.status)
+    .filter((i) => !state.genre || i.genres.includes(state.genre))
+    .filter((i) => !q || [i.title, i.original_title, ...i.creators, ...i.tags].join(' ').toLowerCase().includes(q))
+    .sort(SORTS[state.sort][1]);
+}
+
+function renderGrid() {
+  const list = filtered();
+  $('#empty').hidden = list.length > 0;
+  $('#grid').innerHTML = list.map((i) => `
+    <button class="card" data-id="${esc(i.id)}">
+      <div class="cover">
+        ${safeUrl(i.cover) ? `<img src="${safeUrl(i.cover)}" alt="" loading="lazy">` : ICON[i.type] || '📁'}
+        ${i.rating != null ? `<span class="badge"><b>★</b> ${fmtRating(i.rating)}</span>` : ''}
+      </div>
+      <div class="info"><strong>${esc(i.title)}</strong>
+        <small>${esc(i.year || '')} · ${esc(STATUS[i.status] || '')}</small></div>
+    </button>`).join('');
+}
+
+function openModal(id) {
+  const i = items.find((x) => x.id === id);
+  if (!i) return;
+  const chips = [...i.genres, ...i.tags.map((t) => '#' + t)].map((c) => `<span class="chip">${esc(c)}</span>`).join('');
+  $('#modal').innerHTML = `<div class="m">
+    <button class="close" data-close>Fechar</button>
+    <div class="top">
+      ${safeUrl(i.cover) ? `<img src="${safeUrl(i.cover)}" alt="">` : ''}
+      <div>
+        <h2>${esc(i.title)}</h2>
+        <div class="muted">${esc([i.original_title !== i.title ? i.original_title : '', i.year, lengthText(i.length)].filter(Boolean).join(' · '))}</div>
+        <div class="muted">${esc(i.creators.join(', '))}</div>
+        <p><b style="color:var(--star)">★</b> ${i.rating != null ? fmtRating(i.rating) + '/10' : 'sem nota'} · ${esc(STATUS[i.status] || '')}
+        ${i.date_finished ? `<br><span class="muted">Terminado em ${esc(i.date_finished)}</span>` : ''}</p>
+      </div>
+    </div>
+    <div class="chips">${chips}</div>
+    ${i.review ? `<h3>A minha review</h3><div class="txt">${esc(i.review)}</div>` : ''}
+    ${i.synopsis ? `<h3>Sinopse</h3><div class="txt">${esc(i.synopsis)}</div>` : ''}
+    ${safeUrl(i.source_url) ? `<a href="${safeUrl(i.source_url)}" target="_blank" rel="noopener">Ver na fonte ↗</a>` : ''}
+  </div>`;
+  $('#modal').showModal();
+}
+
+function renderStats() {
+  const done = items.filter((i) => i.status === 'done');
+  const rated = items.filter((i) => i.rating != null);
+  const avg = rated.length ? rated.reduce((s, i) => s + i.rating, 0) / rated.length : null;
+  const year = String(new Date().getFullYear());
+  const thisYear = done.filter((i) => String(i.date_finished || '').startsWith(year));
+  const count = (arr, f) => arr.reduce((m, i) => (f(i).forEach((k) => (m[k] = (m[k] || 0) + 1)), m), {});
+  const bars = (obj, n = 8) => {
+    const e = Object.entries(obj).sort((a, b) => b[1] - a[1]).slice(0, n);
+    const max = e[0]?.[1] || 1;
+    return e.map(([k, v]) => `<div class="bar"><span>${esc(k)}</span><i style="width:${(v / max) * 100}%"></i><span>${v}</span></div>`).join('') || '<p class="muted">Sem dados.</p>';
+  };
+  const gAvg = {};
+  rated.forEach((i) => i.genres.forEach((g) => (gAvg[g] = gAvg[g] || []).push(i.rating)));
+  const gAvgBest = Object.entries(gAvg).filter(([, v]) => v.length >= 2)
+    .map(([g, v]) => [g, +(v.reduce((a, b) => a + b, 0) / v.length).toFixed(1)]);
+  $('#stats').innerHTML = `
+    <div class="stats">
+      <div class="stat"><b>${items.length}</b><span>itens na biblioteca</span></div>
+      <div class="stat"><b>${done.length}</b><span>concluídos</span></div>
+      <div class="stat"><b>${thisYear.length}</b><span>concluídos em ${year}</span></div>
+      <div class="stat"><b>${avg == null ? '–' : avg.toFixed(1)}</b><span>nota média</span></div>
+    </div>
+    <h2 class="sec">Por tipo</h2>${bars(count(items, (i) => [TYPES[i.type] || i.type]))}
+    <h2 class="sec">Géneros mais frequentes</h2>${bars(count(items, (i) => i.genres))}
+    <h2 class="sec">Géneros com melhor nota média <span class="muted">(mín. 2 itens avaliados)</span></h2>
+    ${gAvgBest.sort((a, b) => b[1] - a[1]).slice(0, 8).map(([g, v]) => `<div class="bar"><span>${esc(g)}</span><i style="width:${v * 10}%"></i><span>${v}</span></div>`).join('') || '<p class="muted">Sem dados.</p>'}`;
+}
+
+function bind() {
+  $('#types').addEventListener('click', (e) => {
+    const t = e.target.closest('[data-type]'); if (!t) return;
+    state.type = t.dataset.type;
+    document.querySelectorAll('#types button').forEach((b) => b.classList.toggle('on', b === t));
+    renderGrid();
+  });
+  $('#q').addEventListener('input', (e) => { state.q = e.target.value; renderGrid(); });
+  for (const k of ['status', 'genre', 'sort']) $('#' + k).addEventListener('change', (e) => { state[k] = e.target.value; renderGrid(); });
+  $('#grid').addEventListener('click', (e) => { const c = e.target.closest('[data-id]'); if (c) openModal(c.dataset.id); });
+  $('#modal').addEventListener('click', (e) => { if (e.target === e.currentTarget || e.target.hasAttribute('data-close')) $('#modal').close(); });
+  document.querySelectorAll('nav button').forEach((b) => b.addEventListener('click', () => {
+    document.querySelectorAll('nav button').forEach((x) => x.classList.toggle('on', x === b));
+    $('#library').hidden = b.dataset.view !== 'library';
+    $('#stats').hidden = b.dataset.view !== 'stats';
+  }));
+}
+
+fetch('data.json').then((r) => r.json()).then((d) => {
+  items = d.items;
+  setupControls(); bind(); renderGrid(); renderStats();
+}).catch(() => { $('#grid').innerHTML = '<p class="muted">Não foi possível carregar os dados.</p>'; });
+</script>
+</body>
+</html>
