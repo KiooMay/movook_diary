@@ -1,0 +1,22 @@
+/* O TEU ESTILO — edita só este ficheiro para personalizar o visual.
+   Carrega depois do estilo base, por isso o que puseres aqui tem prioridade
+   e não se perde quando o index.html for atualizado.
+
+   Descomenta e ajusta o que quiseres. */
+
+/* Cores (modo claro) */
+/* :root { --accent: #e0457b; --bg: #fff8f2; --card: #ffffff; --star: #f5a623; } */
+
+/* Cores (modo escuro) */
+/* @media (prefers-color-scheme: dark) {
+  :root { --accent: #ff7aa8; --bg: #101015; --card: #1a1a22; }
+} */
+
+/* Tipo de letra */
+/* body { font-family: Georgia, "Times New Roman", serif; } */
+
+/* Capas maiores ou mais pequenas (150px por defeito) */
+/* .grid { grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); } */
+
+/* Cantos dos cartões */
+/* .card { border-radius: 4px; } */
