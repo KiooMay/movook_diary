@@ -14,7 +14,8 @@ status: done
 rating: 8
 date_added: 2026-10-29
 date_finished: 2026-10-29
-tags: []
+tags: ["sombrio","psicológico","intenso","dramático","perturbador"]
+ai_tagged: true
 ---
 
 # Possessão
