@@ -445,5 +445,200 @@ function load(first) {
 $('#refreshBtn').addEventListener('click', () => load(false).then(() => toast('Atualizado.')));
 load(true);
 </script>
+<script>
+(() => {
+  const FAV_KEY = 'mobook.favorites';
+  const SHELF_KEY = 'mobook.shelves';
+  const $ = (s) => document.querySelector(s);
+  const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const load = (k, d) => { try { return JSON.parse(localStorage.getItem(k)) ?? d; } catch { return d; } };
+  const store = (k, v) => localStorage.setItem(k, JSON.stringify(v));
+  let favs = new Set(load(FAV_KEY, []));
+  let shelves = load(SHELF_KEY, []);
+  let shelfItems = [];
+  let activeShelf = 'favorites';
+  const ICON = { movie: '🎬', series: '📺', anime: '🌸', book: '📖' };
+  const STATUS = { planned: 'Quero ver/ler', 'in-progress': 'A ver/ler', done: 'Concluído', dropped: 'Abandonado' };
+  const fmtRating = (r) => (r == null ? '' : Number.isInteger(r) ? r : r.toFixed(1));
+
+  const style = document.createElement('style');
+  style.textContent = `
+    #shelves .shelfrow{display:flex;gap:.5rem;align-items:center;flex-wrap:wrap;margin:.4rem 0}
+    #shelves .shelfitem{display:flex;gap:.4rem;align-items:center;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:.4rem .6rem}
+    #shelves .shelfitem b{font-size:.95rem}
+    .favstar{position:absolute;top:6px;left:6px;background:rgba(0,0,0,.65);color:#fff;border-radius:8px;padding:0 .45rem;font-size:1rem;cursor:pointer;z-index:2;line-height:1.6}
+    .favstar.on{color:var(--star)}
+    .favgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:1rem;margin-top:1rem}
+  `;
+  document.head.appendChild(style);
+
+  const saveFavs = () => store(FAV_KEY, [...favs]);
+  const saveShelves = () => store(SHELF_KEY, shelves);
+
+  function toast(msg) {
+    const t = $('#toast'); t.textContent = msg; t.hidden = false;
+    setTimeout(() => (t.hidden = true), 4000);
+  }
+
+  const nav = document.querySelector('header nav');
+  const shelvesBtn = document.createElement('button');
+  shelvesBtn.id = 'shelvesBtn';
+  shelvesBtn.dataset.view = 'shelves';
+  shelvesBtn.textContent = 'Estantes';
+  nav.querySelector('button[data-view=stats]').after(shelvesBtn);
+
+  const sec = document.createElement('section');
+  sec.id = 'shelves'; sec.hidden = true;
+  sec.innerHTML = '<div id="shelvesBody"></div>';
+  document.querySelector('main').insertBefore(sec, document.getElementById('stats'));
+
+  function showView(name) {
+    document.querySelectorAll('nav button[data-view]').forEach((b) => b.classList.toggle('on', b.dataset.view === name));
+    $('#library').hidden = name !== 'library';
+    $('#stats').hidden = name !== 'stats';
+    $('#shelves').hidden = name !== 'shelves';
+    if (name === 'shelves') renderShelves();
+  }
+
+  shelvesBtn.addEventListener('click', () => showView('shelves'));
+  document.querySelectorAll('nav button[data-view]').forEach((b) => b.addEventListener('click', () => {
+    $('#shelves').hidden = b.dataset.view !== 'shelves';
+    if (b.dataset.view === 'shelves') renderShelves();
+  }));
+
+  function currentFilter() {
+    return {
+      type: document.querySelector('#types button.on')?.dataset.type || 'all',
+      q: $('#q').value, status: $('#status').value, genre: $('#genre').value,
+      tag: $('#tag').value, sort: $('#sort').value,
+    };
+  }
+
+  function applyShelf(sh) {
+    showView('library');
+    $('#q').value = sh.filter.q || '';
+    $('#q').dispatchEvent(new Event('input'));
+    for (const k of ['status', 'genre', 'tag', 'sort']) {
+      const el = $('#' + k); el.value = sh.filter[k] || '';
+      el.dispatchEvent(new Event('change'));
+    }
+    document.querySelector(`#types button[data-type="${sh.filter.type || 'all'}"]`)?.click();
+    window.scrollTo(0, 0);
+  }
+
+  function cardHTML(i) {
+    return `<button class="card" data-id="${esc(i.id)}">
+      <div class="cover">
+        ${i.cover ? `<img src="${esc(i.cover)}" alt="" loading="lazy">` : ICON[i.type] || '📁'}
+        ${i.rating != null ? `<span class="badge"><b>★</b> ${fmtRating(i.rating)}</span>` : ''}
+      </div>
+      <div class="info"><strong>${esc(i.title)}</strong>
+        <small>${esc(i.year || '')} · ${esc(STATUS[i.status] || '')}</small></div>
+    </button>`;
+  }
+
+  function renderShelves() {
+    const favItems = shelfItems.filter((i) => favs.has(i.id));
+    const shelfList = shelves.map((s) => `
+      <div class="shelfitem">
+        <b>${esc(s.name)}</b>
+        <button class="btn" data-apply="${esc(s.id)}">Abrir</button>
+        <button class="btn danger" data-del="${esc(s.id)}">Eliminar</button>
+      </div>`).join('');
+    $('#shelvesBody').innerHTML = `
+      <h2 class="sec">Estantes</h2>
+      <div class="shelfrow">
+        <button class="btn ${activeShelf === 'favorites' ? 'fill' : ''}" id="favShelf">★ Favoritos (${favItems.length})</button>
+        <button class="btn" id="saveShelf">Guardar filtros atuais</button>
+      </div>
+      ${shelves.length ? `<h2 class="sec">Filtros guardados</h2><div class="shelfrow">${shelfList}</div>` : '<p class="muted">Ainda não tens filtros guardados. Aplica filtros na Biblioteca e volta aqui para os guardar.</p>'}
+      ${activeShelf === 'favorites' ? `<h2 class="sec">★ Favoritos</h2><div class="favgrid">${favItems.map(cardHTML).join('') || '<p class="muted">Ainda não favoritaste nada. Toca na estrela de um item na Biblioteca.</p>'}</div>` : ''}`;
+  }
+
+  $('#shelves').addEventListener('click', (e) => {
+    if (e.target.id === 'favShelf') { activeShelf = 'favorites'; renderShelves(); return; }
+    if (e.target.id === 'saveShelf') {
+      const name = prompt('Nome da estante / filtro guardado:');
+      if (!name) return;
+      shelves.push({ id: Date.now(), name: name.trim(), filter: currentFilter() });
+      saveShelves(); renderShelves(); toast('Filtros guardados.');
+      return;
+    }
+    const applyId = e.target.dataset?.apply;
+    if (applyId) { const sh = shelves.find((s) => String(s.id) === applyId); if (sh) applyShelf(sh); return; }
+    const delId = e.target.dataset?.del;
+    if (delId) {
+      const sh = shelves.find((s) => String(s.id) === delId);
+      if (sh && confirm(`Eliminar a estante "${sh.name}"?`)) {
+        shelves = shelves.filter((s) => String(s.id) !== delId);
+        saveShelves(); renderShelves();
+      }
+      return;
+    }
+    const card = e.target.closest('.card[data-id]');
+    if (card) {
+      showView('library');
+      $('#q').value = ''; $('#q').dispatchEvent(new Event('input'));
+      for (const k of ['status', 'genre', 'tag']) { const el = $('#' + k); el.value = ''; el.dispatchEvent(new Event('change')); }
+      document.querySelector('#types button[data-type="all"]')?.click();
+      document.querySelector(`#grid .card[data-id="${card.dataset.id}"]`)?.click();
+    }
+  });
+
+  function toggleFav(id) {
+    if (favs.has(id)) favs.delete(id); else favs.add(id);
+    saveFavs();
+    document.querySelectorAll(`#grid .card[data-id="${id}"] .favstar`).forEach((s) => {
+      s.classList.toggle('on', favs.has(id)); s.textContent = favs.has(id) ? '★' : '☆';
+    });
+    const mt = $('#modal .favtoggle');
+    if (mt && mt.dataset.id === id) { mt.textContent = favs.has(id) ? '★ Favorito' : '☆ Favoritar'; }
+    if (!$('#shelves').hidden) renderShelves();
+    toast(favs.has(id) ? 'Adicionado aos Favoritos.' : 'Removido dos Favoritos.');
+  }
+
+  function decorate() {
+    document.querySelectorAll('#grid .card[data-id]').forEach((card) => {
+      const cover = card.querySelector('.cover');
+      if (!cover || cover.querySelector('.favstar')) return;
+      const id = card.dataset.id;
+      const s = document.createElement('span');
+      s.className = 'favstar' + (favs.has(id) ? ' on' : '');
+      s.textContent = favs.has(id) ? '★' : '☆';
+      s.title = 'Favorito';
+      s.addEventListener('click', (e) => { e.stopPropagation(); toggleFav(id); });
+      cover.appendChild(s);
+    });
+    const m = $('#modal .m');
+    if (m && !m.querySelector('.favtoggle')) {
+      const ref = m.querySelector('[data-edit],[data-remove]');
+      const id = ref?.dataset.edit || ref?.dataset.remove;
+      if (id) {
+        const b = document.createElement('button');
+        b.className = 'btn favtoggle'; b.dataset.id = id;
+        b.textContent = favs.has(id) ? '★ Favorito' : '☆ Favoritar';
+        b.addEventListener('click', () => toggleFav(id));
+        const row = m.querySelector('.row');
+        if (row) row.insertBefore(b, row.firstChild); else m.appendChild(b);
+      }
+    }
+  }
+
+  let decorating = false;
+  const obs = new MutationObserver(() => {
+    if (decorating) return;
+    decorating = true;
+    queueMicrotask(() => { decorate(); decorating = false; });
+  });
+  obs.observe($('#grid'), { childList: true });
+  obs.observe($('#modal'), { childList: true, subtree: true });
+
+  function loadShelfData() {
+    return fetch('data.json', { cache: 'no-cache' }).then((r) => r.json()).then((d) => { shelfItems = d.items || []; });
+  }
+  loadShelfData().then(() => { if (!$('#shelves').hidden) renderShelves(); });
+  $('#refreshBtn').addEventListener('click', () => loadShelfData().then(() => { if (!$('#shelves').hidden) renderShelves(); }));
+})();
+</script>
 </body>
 </html>
