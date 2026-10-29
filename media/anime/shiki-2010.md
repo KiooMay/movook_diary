@@ -4,7 +4,7 @@ original_title: "屍鬼"
 type: anime
 year: 2010
 creators: ["Daume"]
-genres: ["Horror","Mystery","Supernatural","Thriller"]
+genres: ["Terror","Mistério","Sobrenatural","Suspense"]
 cover: "https://s4.anilist.co/file/anilistcdn/media/anime/cover/medium/bx7724-NwNnRsI34eDa.jpg"
 length: {"episodes":22,"format":"TV"}
 source: anilist
@@ -14,14 +14,15 @@ status: done
 rating: 8
 date_added: 2026-10-28
 date_finished: 2026-10-28
-tags: []
+tags: ["sombrio","misterioso","intenso","fatal"]
+ai_tagged: true
 ---
 
 # Shiki
 
 ## Sinopse
 
-During a fiercely hot summer in Sotoba, a peaceful and quiet village with a population of 1300 people, a series of bizarre deaths begin to occur. At the same time, a strange family moves into a long abandoned mansion in the region. After supposedly visiting this strange family, the fashionable Shimizu Megumi goes missing and the entire village goes out in search for her.
+Durante um verão extremamente quente em Sotoba, uma aldeia pacífica e silenciosa com uma população de 1300 pessoas, começa a ocorrer uma série de mortes bizarras. Ao mesmo tempo, uma estranha família se muda para uma mansão abandonada há muito tempo na região. Depois de supostamente visitar esta estranha família, a fashionista Shimizu Megumi desaparece e toda a aldeia sai à procura dela.
 
 ## Review
 

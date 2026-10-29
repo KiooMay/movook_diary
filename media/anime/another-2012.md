@@ -4,7 +4,7 @@ original_title: "アナザー"
 type: anime
 year: 2012
 creators: ["P.A.WORKS"]
-genres: ["Horror","Mystery","Psychological","Supernatural","Thriller"]
+genres: ["Terror","Mistério","Psicológico","Sobrenatural","Suspense"]
 cover: "https://s4.anilist.co/file/anilistcdn/media/anime/cover/medium/bx11111-gvvE5bBYsyFo.png"
 length: {"episodes":12,"format":"TV"}
 source: anilist
@@ -14,18 +14,15 @@ status: done
 rating: 7.5
 date_added: 2026-10-28
 date_finished: 2026-10-28
-tags: []
+tags: ["atmosfera sombria","morte misteriosa","segredos","suspense","terror psicológico"]
+ai_tagged: true
 ---
 
 # Another
 
 ## Sinopse
 
-When Kouichi Sakakibara transfers to a new school, he senses a frightening atmosphere in his new class, a secret none of them will talk about. At the center is the beautiful Mei Misaki. Kouichi is immediately drawn to her mysterious aura, but he begins to realize that no one else in the class is aware of her presence. Soon after his arrival, what is known as the Calamity begins, and it claims the lives of many students.
-
-
-
-(Source: Sentai Filmworks)
+Quando Kouichi Sakakibara se transfere para uma nova escola, ele sente uma atmosfera aterradora na sua nova turma, um segredo que nenhum deles fala. No centro está a bela Mei Misaki. Kouichi é imediatamente atraído pelo seu aura misteriosa, mas ele começa a perceber que ninguém mais na turma está ciente da sua presença. Logo após a sua chegada, o que é conhecido como o Calamidade começa, e isso reclama a vida de muitos estudantes.
 
 ## Review
 

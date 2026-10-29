@@ -14,7 +14,8 @@ status: done
 rating: 8
 date_added: 2026-10-28
 date_finished: 2026-10-28
-tags: []
+tags: ["psicologia","drama","suspense","morte","redenção"]
+ai_tagged: true
 ---
 
 # Crime e castigo
