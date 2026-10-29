@@ -126,6 +126,7 @@ const fmtRating = (r) => (r == null ? '' : Number.isInteger(r) ? r : r.toFixed(1
 
 let items = [];
 const state = { type: 'all', q: '', status: '', genre: '', tag: '', sort: 'added' };
+window.__movook = { reload: () => load(false), refreshActions };
 
 function lengthText(l) {
   if (!l) return '';
@@ -201,7 +202,7 @@ function openModal(id) {
     ${i.review ? `<h3>A minha review</h3><div class="txt">${esc(i.review)}</div>` : ''}
     ${i.synopsis ? `<h3>Sinopse</h3><div class="txt">${esc(i.synopsis)}</div>` : ''}
     ${safeUrl(i.source_url) ? `<a href="${safeUrl(i.source_url)}" target="_blank" rel="noopener">Ver na fonte ↗</a>` : ''}
-    ${apiReady()
+    ${(apiReady() || window.__movookAccount?.user)
       ? `<div class="row" style="justify-content:flex-start"><button class="btn" data-edit="${esc(i.id)}">✏️ Editar</button><button class="btn danger" data-remove="${esc(i.id)}">🗑 Remover</button></div>`
       : REPO ? `<a class="danger" href="${REPO}/issues/new?template=remove-media.yml&items=${encodeURIComponent(i.id)}" target="_blank" rel="noopener">🗑 Remover da biblioteca</a>` : ''}
   </div>`;
@@ -282,7 +283,7 @@ async function api(path, payload) {
 }
 
 function refreshActions() {
-  const ready = apiReady();
+  const ready = apiReady() || !!window.__movookAccount?.user;
   $('#addBtn').hidden = !ready;
   $('#addLink').hidden = ready || !REPO;
   if (REPO) $('#addLink').href = `${REPO}/issues/new?template=add-media.yml`;
@@ -310,10 +311,28 @@ function openAdd() {
     e.preventDefault();
     const btn = e.target.querySelector('[type=submit]'); btn.disabled = true;
     const titles = $('#fTitles').value.split(/\r?\n/).map((s) => s.trim()).filter(Boolean);
+    const acct = window.__movookAccount;
     try {
-      await api('/add', { type: $('#fType').value, titles, status: $('#fStatus').value, rating: $('#fRating').value, review: $('#fReview').value });
-      dlg.close();
-      toast(`Pedido enviado (${titles.length}). O site atualiza em 1–2 min; depois toca em ↻.`);
+      if (acct?.user) {
+        const status = $('#fStatus').value;
+        const rating = $('#fRating').value ? parseFloat($('#fRating').value) : null;
+        const review = $('#fReview').value;
+        for (const t of titles) {
+          await acct.addPersonal({
+            type: $('#fType').value, title: t, original_title: t, year: null, creators: [], genres: [], tags: [],
+            rating: titles.length === 1 ? rating : null, status,
+            date_added: new Date().toISOString().slice(0, 10),
+            date_finished: status === 'done' ? new Date().toISOString().slice(0, 10) : '',
+            review: titles.length === 1 ? review : '', synopsis: '', cover: '', source_url: '', length: {},
+          });
+        }
+        dlg.close();
+        toast(`Adicionado à tua biblioteca (${titles.length}).`);
+      } else {
+        await api('/add', { type: $('#fType').value, titles, status: $('#fStatus').value, rating: $('#fRating').value, review: $('#fReview').value });
+        dlg.close();
+        toast(`Pedido enviado (${titles.length}). O site atualiza em 1–2 min; depois toca em ↻.`);
+      }
     } catch (err) { btn.disabled = false; toast('Erro: ' + err.message); }
   });
 }
@@ -371,13 +390,23 @@ function openEdit(id) {
   $('#editForm').addEventListener('submit', async (e) => {
     e.preventDefault();
     const btn = e.target.querySelector('[type=submit]'); btn.disabled = true;
+    const patch = {
+      status: $('#eStatus').value,
+      rating: $('#eRating').value ? parseFloat($('#eRating').value) : null,
+      date_finished: $('#eDate').value,
+      tags: $('#eTags').value.split(',').map((s) => s.trim()).filter(Boolean),
+      review: $('#eReview').value,
+    };
     try {
-      await api('/edit', {
-        id, status: $('#eStatus').value, rating: $('#eRating').value, date_finished: $('#eDate').value,
-        tags: $('#eTags').value.split(',').map((s) => s.trim()).filter(Boolean), review: $('#eReview').value,
-      });
-      dlg.close(); $('#modal').close();
-      toast('Edição enviada. O site atualiza em 1–2 min; depois toca em ↻.');
+      if (window.__movookAccount?.user) {
+        await window.__movookAccount.updatePersonal(id, patch);
+        dlg.close(); $('#modal').close();
+        toast('Alterações guardadas na tua biblioteca.');
+      } else {
+        await api('/edit', { id, ...patch });
+        dlg.close(); $('#modal').close();
+        toast('Edição enviada. O site atualiza em 1–2 min; depois toca em ↻.');
+      }
     } catch (err) { btn.disabled = false; toast('Erro: ' + err.message); }
   });
 }
@@ -391,9 +420,15 @@ $('#modal').addEventListener('click', async (e) => {
   if (!confirm(`Remover "${it ? it.title : id}" da biblioteca?`)) return;
   e.target.disabled = true;
   try {
-    await api('/remove', { items: [id] });
-    $('#modal').close();
-    toast('Pedido de remoção enviado. O site atualiza em 1–2 min; depois toca em ↻.');
+    if (window.__movookAccount?.user) {
+      await window.__movookAccount.removePersonal(id);
+      $('#modal').close();
+      toast('Removido da tua biblioteca.');
+    } else {
+      await api('/remove', { items: [id] });
+      $('#modal').close();
+      toast('Pedido de remoção enviado. O site atualiza em 1–2 min; depois toca em ↻.');
+    }
   } catch (err) { e.target.disabled = false; toast('Erro: ' + err.message); }
 });
 refreshActions();
@@ -407,7 +442,7 @@ function renderInsights() {
   const el = $('#insights');
   const s = insights?.summary, recs = insights?.recommendations || [];
   if (!s?.text && !recs.length) { el.innerHTML = ''; return; }
-  const ready = apiReady();
+  const ready = apiReady() || !!window.__movookAccount?.user;
   el.innerHTML = `
     ${s?.text ? `<h2 class="sec">✨ Resumo de ${esc(s.year)}</h2><div class="stat txt">${esc(s.text)}</div>` : ''}
     ${recs.length ? `<h2 class="sec">Para ti <span class="muted">(sugestões geradas por AI)</span></h2>
@@ -429,12 +464,29 @@ $('#insights').addEventListener('click', async (e) => {
   const r = insights.recommendations[k];
   e.target.disabled = true;
   try {
-    await api('/add', { type: r.type, titles: [`${r.title.replace(/\|/g, ' ')} | ${r.year}`], status: 'planned' });
-    toast(`"${r.title}" enviado para a biblioteca. O site atualiza em 1–2 min; depois toca em ↻.`);
+    if (window.__movookAccount?.user) {
+      await window.__movookAccount.addPersonal({
+        type: r.type, title: r.title, original_title: r.title, year: r.year, creators: [], genres: [], tags: [],
+        rating: null, status: 'planned', date_added: new Date().toISOString().slice(0, 10), date_finished: '',
+        review: '', synopsis: '', cover: '', source_url: '', length: {},
+      });
+      toast(`"${r.title}" adicionado à tua biblioteca.`);
+    } else {
+      await api('/add', { type: r.type, titles: [`${r.title.replace(/\|/g, ' ')} | ${r.year}`], status: 'planned' });
+      toast(`"${r.title}" enviado para a biblioteca. O site atualiza em 1–2 min; depois toca em ↻.`);
+    }
   } catch (err) { e.target.disabled = false; toast('Erro: ' + err.message); }
 });
 
 function load(first) {
+  const acct = window.__movookAccount;
+  if (acct?.user) {
+    items = acct.items || [];
+    Object.assign(state, { type: 'all', q: '', status: '', genre: '', tag: '', sort: 'added' });
+    $('#q').value = '';
+    setupControls(); if (first) bind(); renderGrid(); renderStats(); loadInsights();
+    return;
+  }
   return fetch('data.json', { cache: 'no-cache' }).then((r) => r.json()).then((d) => {
     items = d.items;
     Object.assign(state, { type: 'all', q: '', status: '', genre: '', tag: '', sort: 'added' });
@@ -636,8 +688,8 @@ load(true);
   function loadShelfData() {
     return fetch('data.json', { cache: 'no-cache' }).then((r) => r.json()).then((d) => { shelfItems = d.items || []; });
   }
-  loadShelfData().then(() => { if (!$('#shelves').hidden) renderShelves(); });
-  $('#refreshBtn').addEventListener('click', () => loadShelfData().then(() => { if (!$('#shelves').hidden) renderShelves(); }));
+  loadShelfData().then(() => { renderShelves(); });
+  $('#refreshBtn').addEventListener('click', () => loadShelfData().then(() => { renderShelves(); }));
 })();
 </script>
 <script type="module">
@@ -652,6 +704,8 @@ load(true);
   const store = (k, v) => localStorage.setItem(k, JSON.stringify(v));
   let sb = null, user = null, syncing = false, initialSyncDone = false;
   const pending = { fav: false, shelf: false };
+
+  window.__movookAccount = { user: null, items: [], addPersonal, updatePersonal, removePersonal };
 
   function toast(msg) {
     const t = $('#toast'); t.textContent = msg; t.hidden = false;
@@ -676,7 +730,7 @@ load(true);
       dlg.innerHTML = `<div class="m form">
         <h2>Conta</h2>
         <p class="muted">Sessão iniciada como <b>${esc(user.email)}</b>.</p>
-        <p class="muted">Favoritos e estantes guardados estão sincronizados com a tua conta.</p>
+        <p class="muted">A tua biblioteca, favoritos e estantes estão ligados à tua conta.</p>
         ${msg ? `<p class="muted">${esc(msg)}</p>` : ''}${err ? `<p class="danger">${esc(err)}</p>` : ''}
         <div class="row"><button class="btn danger" id="signOut">Sair</button>
         <button class="btn" data-close>Fechar</button></div></div>`;
@@ -687,7 +741,7 @@ load(true);
     } else {
       dlg.innerHTML = `<form class="m form" id="authForm">
         <h2>Conta</h2>
-        <p class="muted">Entra para sincronizar favoritos e estantes entre dispositivos.</p>
+        <p class="muted">Entra para teres a tua própria biblioteca, sincronizada entre dispositivos.</p>
         <label>Email<input id="aEmail" type="email" required autocomplete="email"></label>
         <label>Password<input id="aPass" type="password" required minlength="6" autocomplete="current-password"></label>
         ${msg ? `<p class="muted">${esc(msg)}</p>` : ''}${err ? `<p class="danger">${esc(err)}</p>` : ''}
@@ -730,8 +784,42 @@ load(true);
 
   function setUser(u) {
     user = u; initialSyncDone = false;
+    window.__movookAccount.user = u;
     acctBtn.textContent = user ? user.email.split('@')[0] : 'Conta';
-    if (user) syncAll();
+    if (user) { syncAll(); loadPersonal(); }
+    else { window.__movookAccount.items = []; }
+    window.__movook?.reload?.();
+    window.__movook?.refreshActions?.();
+  }
+
+  async function loadPersonal() {
+    if (!user) return;
+    const { data, error } = await sb.from('user_media').select('id,data').eq('user_id', user.id).order('created_at', { ascending: false });
+    if (error) { console.warn('personal library error', error); return; }
+    window.__movookAccount.items = (data || []).map((r) => ({ ...(r.data || {}), id: String(r.id) }));
+    window.__movook?.reload?.();
+  }
+
+  async function addPersonal(item) {
+    const { data, error } = await sb.from('user_media').insert({ user_id: user.id, data: item }).select('id').single();
+    if (error) throw error;
+    await loadPersonal();
+    return String(data.id);
+  }
+
+  async function updatePersonal(id, patch) {
+    const it = window.__movookAccount.items.find((x) => x.id === String(id));
+    if (!it) return;
+    const merged = { ...it, ...patch };
+    const { error } = await sb.from('user_media').update({ data: merged }).eq('id', id).eq('user_id', user.id);
+    if (error) throw error;
+    await loadPersonal();
+  }
+
+  async function removePersonal(id) {
+    const { error } = await sb.from('user_media').delete().eq('id', id).eq('user_id', user.id);
+    if (error) throw error;
+    await loadPersonal();
   }
 
   async function syncAll() {
