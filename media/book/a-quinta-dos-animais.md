@@ -14,7 +14,8 @@ status: done
 rating: 8.5
 date_added: 2026-10-29
 date_finished: 2026-10-29
-tags: []
+tags: ["satírico","político","distópico","crítico","social"]
+ai_tagged: true
 ---
 
 # A Quinta dos Animais
