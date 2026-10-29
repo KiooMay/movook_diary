@@ -14,14 +14,15 @@ status: planned
 rating: null
 date_added: 2026-10-29
 date_finished: null
-tags: []
+tags: ["sombrio","psicológico","assustador"]
+ai_tagged: true
 ---
 
 # The Dark and the Wicked
 
 ## Sinopse
 
-On a secluded farm in a nondescript rural town, a man is slowly dying. His family gathers to mourn, and soon a darkness grows, marked by waking nightmares and a growing sense that something evil is taking over the family.
+Numa quinta isolada numa cidade rural anónima, um homem está a morrer lentamente. A sua família reúne-se para o lamentar e, logo, uma escuridão cresce, marcada por pesadelos acordados e um sentimento crescente de que algo maligno está a tomar conta da família.
 
 ## Review
 
