@@ -14,14 +14,15 @@ status: done
 rating: 6.5
 date_added: 2026-10-29
 date_finished: 2026-10-29
-tags: []
+tags: ["drama","emocional","família"]
+ai_tagged: true
 ---
 
 # One Halloween
 
 ## Sinopse
 
-A soldier tries to connect with his 10-year-old daughter after returning home from war.
+Um soldado tenta conectar-se com a sua filha de 10 anos após regressar a casa da guerra.
 
 ## Review
 
