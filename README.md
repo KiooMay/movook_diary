@@ -1,8 +1,6 @@
 # Falta implementar:
 
-<b>1</b> - Terminar processo que estava a ser feito agora.
-
-<b>2</b> - Ver se o adicionar funciona (ambas as plataformas)
+<b>2</b> - Sistema para importar dados do IMDB/GOODREADS/MYANIMELIST/LETTERBOXD
 
 <b>3</b> - Integrar também pesquisa pelo IMDB
 
