@@ -14,7 +14,8 @@ status: done
 rating: 9
 date_added: 2026-10-29
 date_finished: 2026-10-29
-tags: []
+tags: ["mágico","aventura","infância","sonho","mistério"]
+ai_tagged: true
 ---
 
 # A Viagem de Chihiro
