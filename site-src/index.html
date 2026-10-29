@@ -9,8 +9,8 @@
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-title" content="Mobook">
-<title>Mobook Diary</title>
+<meta name="apple-mobile-web-app-title" content="MOVOOK">
+<title>MOVOOK</title>
 <style>
 :root{--bg:#f6f5f2;--card:#fff;--text:#1c1c22;--muted:#6b6b76;--line:#e2e0da;--accent:#5b4bdb;--star:#e0a100;color-scheme:light}
 @media (prefers-color-scheme:dark){:root{--bg:#14141a;--card:#1e1e26;--text:#ececf1;--muted:#9a9aa8;--line:#2e2e3a;--accent:#8b7dff;--star:#f2b827;color-scheme:dark}}
@@ -75,7 +75,7 @@ button:disabled{opacity:.6;cursor:wait}
 </head>
 <body>
 <header>
-  <h1>📚 Mobook Diary</h1>
+  <h1>📚 MOVOOK</h1>
   <nav>
     <button data-view="library" class="on">Biblioteca</button>
     <button data-view="stats">Estatísticas</button>
@@ -115,7 +115,7 @@ const SORTS = {
 };
 const ICON = { movie: '🎬', series: '📺', anime: '🌸', book: '📖' };
 const $ = (s) => document.querySelector(s);
-const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&', '<': '<', '>': '>', '"': '"', "'": '&#39;' }[c]));
 const safeUrl = (u) => (/^(https?:\/\/|covers\/)/i.test(u || '') ? esc(u) : '');
 // Repo deduzido do endereço do GitHub Pages (utilizador.github.io/repo/)
 const REPO = (() => {
@@ -450,7 +450,7 @@ load(true);
   const FAV_KEY = 'mobook.favorites';
   const SHELF_KEY = 'mobook.shelves';
   const $ = (s) => document.querySelector(s);
-  const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&', '<': '<', '>': '>', '"': '"', "'": '&#39;' }[c]));
   const load = (k, d) => { try { return JSON.parse(localStorage.getItem(k)) ?? d; } catch { return d; } };
   const store = (k, v) => localStorage.setItem(k, JSON.stringify(v));
   let favs = new Set(load(FAV_KEY, []));
@@ -467,7 +467,7 @@ load(true);
     #shelves .shelfitem{display:flex;gap:.4rem;align-items:center;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:.4rem .6rem}
     #shelves .shelfitem b{font-size:.95rem}
     .favstar{position:absolute;top:6px;left:6px;background:rgba(0,0,0,.65);color:#fff;border-radius:8px;padding:0 .45rem;font-size:1rem;cursor:pointer;z-index:2;line-height:1.6}
-    .favstar.on{color:var(--star)}
+    .favstar.on{color:#e0245e}
     .favgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:1rem;margin-top:1rem}
   `;
   document.head.appendChild(style);
@@ -548,11 +548,11 @@ load(true);
     $('#shelvesBody').innerHTML = `
       <h2 class="sec">Estantes</h2>
       <div class="shelfrow">
-        <button class="btn ${activeShelf === 'favorites' ? 'fill' : ''}" id="favShelf">★ Favoritos (${favItems.length})</button>
+        <button class="btn ${activeShelf === 'favorites' ? 'fill' : ''}" id="favShelf">♥ Favoritos (${favItems.length})</button>
         <button class="btn" id="saveShelf">Guardar filtros atuais</button>
       </div>
       ${shelves.length ? `<h2 class="sec">Filtros guardados</h2><div class="shelfrow">${shelfList}</div>` : '<p class="muted">Ainda não tens filtros guardados. Aplica filtros na Biblioteca e volta aqui para os guardar.</p>'}
-      ${activeShelf === 'favorites' ? `<h2 class="sec">★ Favoritos</h2><div class="favgrid">${favItems.map(cardHTML).join('') || '<p class="muted">Ainda não favoritaste nada. Toca na estrela de um item na Biblioteca.</p>'}</div>` : ''}`;
+      ${activeShelf === 'favorites' ? `<h2 class="sec">♥ Favoritos</h2><div class="favgrid">${favItems.map(cardHTML).join('') || '<p class="muted">Ainda não favoritaste nada. Toca no coração de um item na Biblioteca.</p>'}</div>` : ''}`;
   }
 
   $('#shelves').addEventListener('click', (e) => {
@@ -569,7 +569,7 @@ load(true);
     const delId = e.target.dataset?.del;
     if (delId) {
       const sh = shelves.find((s) => String(s.id) === delId);
-      if (sh && confirm(`Eliminar a estante "${sh.name}"?`)) {
+      if (sh && confirm(`Eliminar a estante \"${sh.name}\"?`)) {
         shelves = shelves.filter((s) => String(s.id) !== delId);
         saveShelves(); renderShelves();
       }
@@ -589,10 +589,10 @@ load(true);
     if (favs.has(id)) favs.delete(id); else favs.add(id);
     saveFavs();
     document.querySelectorAll(`#grid .card[data-id="${id}"] .favstar`).forEach((s) => {
-      s.classList.toggle('on', favs.has(id)); s.textContent = favs.has(id) ? '★' : '☆';
+      s.classList.toggle('on', favs.has(id)); s.textContent = favs.has(id) ? '♥' : '♡';
     });
     const mt = $('#modal .favtoggle');
-    if (mt && mt.dataset.id === id) { mt.textContent = favs.has(id) ? '★ Favorito' : '☆ Favoritar'; }
+    if (mt && mt.dataset.id === id) { mt.textContent = favs.has(id) ? '♥ Favorito' : '♡ Favoritar'; }
     if (!$('#shelves').hidden) renderShelves();
     toast(favs.has(id) ? 'Adicionado aos Favoritos.' : 'Removido dos Favoritos.');
   }
@@ -604,7 +604,7 @@ load(true);
       const id = card.dataset.id;
       const s = document.createElement('span');
       s.className = 'favstar' + (favs.has(id) ? ' on' : '');
-      s.textContent = favs.has(id) ? '★' : '☆';
+      s.textContent = favs.has(id) ? '♥' : '♡';
       s.title = 'Favorito';
       s.addEventListener('click', (e) => { e.stopPropagation(); toggleFav(id); });
       cover.appendChild(s);
@@ -616,7 +616,7 @@ load(true);
       if (id) {
         const b = document.createElement('button');
         b.className = 'btn favtoggle'; b.dataset.id = id;
-        b.textContent = favs.has(id) ? '★ Favorito' : '☆ Favoritar';
+        b.textContent = favs.has(id) ? '♥ Favorito' : '♡ Favoritar';
         b.addEventListener('click', () => toggleFav(id));
         const row = m.querySelector('.row');
         if (row) row.insertBefore(b, row.firstChild); else m.appendChild(b);
@@ -647,7 +647,7 @@ load(true);
   const FAV_KEY = 'mobook.favorites';
   const SHELF_KEY = 'mobook.shelves';
   const $ = (s) => document.querySelector(s);
-  const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&', '<': '<', '>': '>', '"': '"', "'": '&#39;' }[c]));
   const load = (k) => { try { return JSON.parse(localStorage.getItem(k)) || []; } catch { return []; } };
   const store = (k, v) => localStorage.setItem(k, JSON.stringify(v));
   let sb = null, user = null, syncing = false, initialSyncDone = false;
@@ -692,20 +692,33 @@ load(true);
         <label>Password<input id="aPass" type="password" required minlength="6" autocomplete="current-password"></label>
         ${msg ? `<p class="muted">${esc(msg)}</p>` : ''}${err ? `<p class="danger">${esc(err)}</p>` : ''}
         <div class="row"><button type="button" class="btn" data-close>Fechar</button>
-        <button type="button" class="btn" id="signUp">Criar conta</button>
-        <button type="submit" class="btn fill">Entrar</button></div></form>`;
+        <button type="button" class="btn" id="signUp" disabled>Criar conta</button>
+        <button type="submit" class="btn fill" id="signIn" disabled>Entrar</button></div></form>`;
+      const emailEl = $('#aEmail'), passEl = $('#aPass');
+      const inBtn = $('#signIn'), upBtn = $('#signUp');
+      const check = () => {
+        const ok = /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(emailEl.value.trim()) && passEl.value.length >= 6;
+        inBtn.disabled = !ok; upBtn.disabled = !ok;
+      };
+      emailEl.addEventListener('input', check);
+      passEl.addEventListener('input', check);
+      check();
       $('#authForm').addEventListener('submit', async (e) => {
         e.preventDefault();
-        await auth($('#aEmail').value.trim(), $('#aPass').value, false);
+        await auth(emailEl.value.trim(), passEl.value, false);
       });
-      $('#signUp').addEventListener('click', async () => {
-        await auth($('#aEmail').value.trim(), $('#aPass').value, true);
+      upBtn.addEventListener('click', async () => {
+        await auth(emailEl.value.trim(), passEl.value, true);
       });
     }
     dlg.querySelectorAll('[data-close]').forEach((b) => b.addEventListener('click', () => dlg.close()));
   }
 
   async function auth(email, pass, signUp) {
+    if (!email || !pass || pass.length < 6) {
+      renderAccount('', 'Preenche um email válido e uma password com pelo menos 6 caracteres.');
+      return;
+    }
     const btn = dlg.querySelector('.fill'); btn.disabled = true;
     try {
       const res = signUp ? await sb.auth.signUp({ email, password: pass }) : await sb.auth.signInWithPassword({ email, password: pass });
