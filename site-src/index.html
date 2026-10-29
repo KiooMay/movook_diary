@@ -640,5 +640,161 @@ load(true);
   $('#refreshBtn').addEventListener('click', () => loadShelfData().then(() => { if (!$('#shelves').hidden) renderShelves(); }));
 })();
 </script>
+<script type="module">
+(() => {
+  const SUPABASE_URL = 'https://yeojzmpzniwegypaofkl.supabase.co';
+  const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inllb2p6bXB6bml3ZWd5cGFvZmtsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTMyODA0MzEsImV4cCI6MjEwODg1NjQzMX0.I_lRG098kHMmcMt15YPof9bV77HYnNkVg3tyWufooYw';
+  const FAV_KEY = 'mobook.favorites';
+  const SHELF_KEY = 'mobook.shelves';
+  const $ = (s) => document.querySelector(s);
+  const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const load = (k) => { try { return JSON.parse(localStorage.getItem(k)) || []; } catch { return []; } };
+  const store = (k, v) => localStorage.setItem(k, JSON.stringify(v));
+  let sb = null, user = null, syncing = false, initialSyncDone = false;
+  const pending = { fav: false, shelf: false };
+
+  function toast(msg) {
+    const t = $('#toast'); t.textContent = msg; t.hidden = false;
+    setTimeout(() => (t.hidden = true), 5000);
+  }
+
+  const nav = document.querySelector('header nav');
+  const acctBtn = document.createElement('button');
+  acctBtn.id = 'accountBtn';
+  acctBtn.textContent = 'Conta';
+  nav.querySelector('#cfgBtn').before(acctBtn);
+
+  const dlg = document.createElement('dialog');
+  dlg.id = 'accountDlg';
+  document.body.appendChild(dlg);
+  dlg.addEventListener('click', (e) => { if (e.target === dlg) dlg.close(); });
+
+  acctBtn.addEventListener('click', () => { renderAccount(); dlg.showModal(); });
+
+  function renderAccount(msg = '', err = '') {
+    if (user) {
+      dlg.innerHTML = `<div class="m form">
+        <h2>Conta</h2>
+        <p class="muted">Sessão iniciada como <b>${esc(user.email)}</b>.</p>
+        <p class="muted">Favoritos e estantes guardados estão sincronizados com a tua conta.</p>
+        ${msg ? `<p class="muted">${esc(msg)}</p>` : ''}${err ? `<p class="danger">${esc(err)}</p>` : ''}
+        <div class="row"><button class="btn danger" id="signOut">Sair</button>
+        <button class="btn" data-close>Fechar</button></div></div>`;
+      $('#signOut').addEventListener('click', async () => {
+        await sb.auth.signOut();
+        dlg.close(); toast('Sessão terminada.');
+      });
+    } else {
+      dlg.innerHTML = `<form class="m form" id="authForm">
+        <h2>Conta</h2>
+        <p class="muted">Entra para sincronizar favoritos e estantes entre dispositivos.</p>
+        <label>Email<input id="aEmail" type="email" required autocomplete="email"></label>
+        <label>Password<input id="aPass" type="password" required minlength="6" autocomplete="current-password"></label>
+        ${msg ? `<p class="muted">${esc(msg)}</p>` : ''}${err ? `<p class="danger">${esc(err)}</p>` : ''}
+        <div class="row"><button type="button" class="btn" data-close>Fechar</button>
+        <button type="button" class="btn" id="signUp">Criar conta</button>
+        <button type="submit" class="btn fill">Entrar</button></div></form>`;
+      $('#authForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        await auth($('#aEmail').value.trim(), $('#aPass').value, false);
+      });
+      $('#signUp').addEventListener('click', async () => {
+        await auth($('#aEmail').value.trim(), $('#aPass').value, true);
+      });
+    }
+    dlg.querySelectorAll('[data-close]').forEach((b) => b.addEventListener('click', () => dlg.close()));
+  }
+
+  async function auth(email, pass, signUp) {
+    const btn = dlg.querySelector('.fill'); btn.disabled = true;
+    try {
+      const res = signUp ? await sb.auth.signUp({ email, password: pass }) : await sb.auth.signInWithPassword({ email, password: pass });
+      if (res.error) throw res.error;
+      if (signUp && !res.data.session) { renderAccount('Conta criada. Confirma o email, se o Supabase pedir confirmação, e depois entra.'); return; }
+      setUser(res.data.user); dlg.close(); toast('Sessão iniciada.');
+    } catch (err) { btn.disabled = false; renderAccount('', err.message); }
+  }
+
+  function setUser(u) {
+    user = u; initialSyncDone = false;
+    acctBtn.textContent = user ? user.email.split('@')[0] : 'Conta';
+    if (user) syncAll();
+  }
+
+  async function syncAll() {
+    if (!user || syncing) return;
+    syncing = true;
+    try {
+      await syncFavorites();
+      await syncShelves();
+      initialSyncDone = true;
+      pending.fav = pending.shelf = false;
+    } catch (err) { console.warn('Sync error', err); }
+    finally {
+      syncing = false;
+      if (pending.fav || pending.shelf) { pending.fav = pending.shelf = false; syncAll(); }
+    }
+  }
+
+  async function syncFavorites() {
+    const local = new Set(load(FAV_KEY));
+    const { data, error } = await sb.from('user_favorites').select('item_id').eq('user_id', user.id);
+    if (error) throw error;
+    const remote = new Set((data || []).map((r) => r.item_id));
+    if (!initialSyncDone) {
+      const merged = [...new Set([...local, ...remote])];
+      const toAdd = [...local].filter((id) => !remote.has(id));
+      if (toAdd.length) await sb.from('user_favorites').insert(toAdd.map((id) => ({ user_id: user.id, item_id: id })));
+      store(FAV_KEY, JSON.stringify(merged));
+      return;
+    }
+    const toAdd = [...local].filter((id) => !remote.has(id));
+    const toDel = [...remote].filter((id) => !local.has(id));
+    if (toAdd.length) await sb.from('user_favorites').insert(toAdd.map((id) => ({ user_id: user.id, item_id: id })));
+    if (toDel.length) await sb.from('user_favorites').delete().in('item_id', toDel).eq('user_id', user.id);
+  }
+
+  async function syncShelves() {
+    const local = load(SHELF_KEY);
+    const { data, error } = await sb.from('user_shelves').select('*').eq('user_id', user.id);
+    if (error) throw error;
+    const remote = data || [];
+    if (!initialSyncDone) {
+      const merged = [...local];
+      const remoteNames = new Set(remote.map((r) => r.name));
+      const toAdd = local.filter((s) => !remoteNames.has(s.name));
+      for (const r of remote) if (!merged.some((s) => s.name === r.name)) merged.push({ id: r.id, name: r.name, filter: r.filter || {} });
+      if (toAdd.length) await sb.from('user_shelves').insert(toAdd.map((s) => ({ user_id: user.id, name: s.name, filter: s.filter || {} })));
+      store(SHELF_KEY, JSON.stringify(merged));
+      return;
+    }
+    const localNames = new Set(local.map((s) => s.name));
+    const remoteNames = new Set(remote.map((r) => r.name));
+    const toAdd = local.filter((s) => !remoteNames.has(s.name));
+    const toDel = remote.filter((r) => !localNames.has(r.name)).map((r) => r.id);
+    if (toAdd.length) await sb.from('user_shelves').insert(toAdd.map((s) => ({ user_id: user.id, name: s.name, filter: s.filter || {} })));
+    if (toDel.length) await sb.from('user_shelves').delete().in('id', toDel).eq('user_id', user.id);
+  }
+
+  const origSet = localStorage.setItem.bind(localStorage);
+  localStorage.setItem = (k, v) => {
+    origSet(k, v);
+    if (!user) return;
+    if (k === FAV_KEY) pending.fav = true;
+    if (k === SHELF_KEY) pending.shelf = true;
+    if ((pending.fav || pending.shelf) && !syncing) syncAll();
+  };
+
+  (async () => {
+    try {
+      const { createClient } = await import('https://esm.sh/@supabase/supabase-js@2');
+      sb = createClient(SUPABASE_URL, SUPABASE_KEY);
+      const { data: { session } } = await sb.auth.getSession();
+      setUser(session?.user || null);
+      sb.auth.onAuthStateChange((_e, s) => setUser(s?.user || null));
+    } catch (err) { console.warn('Supabase unavailable', err); }
+  })();
+})();
+</script>
 </body>
 </html>
