@@ -1,25 +1,19 @@
 name: Deploy site
-
 on:
   push:
     branches: [main]
     paths: ["media/**", "data/**", "site-src/**", "scripts/build-site.mjs"]
-  # Commits feitos com o GITHUB_TOKEN NÃO disparam o "push" acima,
-  # por isso reagimos ao fim do workflow "Add media".
   workflow_run:
     workflows: ["Add media", "Remove media", "Edit media", "AI enrich"]
     types: [completed]
   workflow_dispatch:
-
 permissions:
   contents: read
   pages: write
   id-token: write
-
 concurrency:
   group: pages
   cancel-in-progress: true
-
 jobs:
   deploy:
     if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
@@ -32,7 +26,20 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 20
+      - run: node --check site-src/importer.mjs
       - run: node scripts/build-site.mjs
+      - name: Connect account importer
+        run: |
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          const path='_site/index.html';
+          let html=fs.readFileSync(path,'utf8');
+          const needle='sb = createClient(SUPABASE_URL, SUPABASE_KEY);';
+          if(!html.includes(needle)||!html.includes('</body>')) throw Error('Importer integration target missing');
+          html=html.replace(needle,needle+' window.__movookClient = sb;');
+          html=html.replace('</body>','<script type="module" src="importer.mjs"></script>\n</body>');
+          fs.writeFileSync(path,html);
+          NODE
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:
