@@ -1,0 +1,12 @@
+import assert from 'node:assert/strict';
+import {enableAvatarNavigation} from './connect-avatar.mjs';
+import {avatarPath,imageType,validateImage,uploadAvatar,removeAvatar,ORIGINAL_LIMIT,STORED_LIMIT} from '../site-src/avatar.mjs';
+const id='11111111-1111-4111-8111-111111111111',other='22222222-2222-4222-8222-222222222222';
+const png=new Blob([new Uint8Array([137,80,78,71,13,10,26,10,0,0,0,0])],{type:'image/png'});
+assert.equal(avatarPath(id),id+'/avatar');assert.throws(()=>avatarPath('../other'));assert.equal(imageType(await png.arrayBuffer()),'image/png');await validateImage(png);
+await assert.rejects(validateImage(new Blob(['<svg/>'],{type:'image/png'})),/Formato/);await assert.rejects(validateImage({size:ORIGINAL_LIMIT+1}),/limite/);await assert.rejects(validateImage({size:STORED_LIMIT+1},STORED_LIMIT),/limite/);
+const calls=[];const client={auth:{getUser:async()=>({data:{user:{id}}})},storage:{from:bucket=>{assert.equal(bucket,'avatars');return {upload:async(path,blob,options)=>{calls.push({op:'upload',path,options});return {};},remove:async(paths)=>{calls.push({op:'remove',paths});return {};}};}}};
+await uploadAvatar(client,id,png);assert.equal(calls[0].path,id+'/avatar');assert.deepEqual(calls[0].options,{upsert:true,contentType:'image/png',cacheControl:'0'});await removeAvatar(client,id);assert.deepEqual(calls[1].paths,[id+'/avatar']);
+await assert.rejects(uploadAvatar(client,other,png),/conta mudou/);await assert.rejects(removeAvatar(client,id,()=>other),/conta mudou/);assert.equal(calls.length,2);
+assert.ok(enableAvatarNavigation("['addBtn','addLink'].includes(node.id)").includes("'avatarBtn'"));assert.throws(()=>enableAvatarNavigation('unexpected source'));
+console.log('Avatar signature, limits, fixed path, authenticated upload/removal and navigation tests passed');

@@ -1,0 +1,9 @@
+/* Avatar privado. Personaliza estas regras em custom.css. */
+:root{--avatar-size:36px}
+#avatarBtn[hidden]{display:none!important}
+header nav>#avatarBtn{order:0;width:var(--avatar-size);height:var(--avatar-size);min-width:var(--avatar-size);padding:0;margin-right:.25rem;border:1px solid var(--line);border-radius:50%;display:grid;place-items:center;overflow:hidden;background:color-mix(in srgb,var(--accent) 15%,var(--card));color:var(--accent);font-weight:650;cursor:pointer;flex:0 0 auto}
+#avatarBtn img,.avatar-preview img{display:block;width:100%;height:100%;object-fit:cover;border-radius:inherit}
+.avatar-preview{width:88px;height:88px;border-radius:50%;overflow:hidden;display:grid;place-items:center;background:color-mix(in srgb,var(--accent) 15%,var(--card));color:var(--accent);border:1px solid var(--line);font-size:2rem;font-weight:650}
+.avatar-form{padding-bottom:1rem;border-bottom:1px solid var(--line)}
+.avatar-form h3{margin:0;font-size:1rem}
+.avatar-form input[type=file]{max-width:100%}
