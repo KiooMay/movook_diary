@@ -30,6 +30,7 @@ jobs:
       - run: node --check site-src/book-metadata.mjs
       - run: node --check site-src/books-proxy.mjs
       - run: node --check site-src/media-metadata.mjs
+      - run: node --check site-src/interface.mjs
       - run: node scripts/book-metadata.test.mjs
       - run: node scripts/books-proxy.test.mjs
       - run: node scripts/media-metadata.test.mjs
@@ -43,7 +44,7 @@ jobs:
           const needle='sb = createClient(SUPABASE_URL, SUPABASE_KEY);';
           if(!html.includes(needle)||!html.includes('</body>')) throw Error('Importer integration target missing');
           html=html.replace(needle,needle+' window.__movookClient = sb;');
-          html=html.replace('</body>','<script type="module" src="book-metadata.mjs"></script>\n<script type="module" src="importer.mjs"></script>\n<script type="module" src="media-metadata.mjs"></script>\n</body>');
+          html=html.replace('</body>','<script type="module" src="book-metadata.mjs"></script>\n<script type="module" src="importer.mjs"></script>\n<script type="module" src="media-metadata.mjs"></script>\n<script type="module" src="interface.mjs"></script>\n</body>');
           fs.writeFileSync(path,html);
           const importerPath='_site/importer.mjs';
           let importer=fs.readFileSync(importerPath,'utf8');

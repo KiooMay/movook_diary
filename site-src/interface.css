@@ -1,0 +1,55 @@
+/* Base visual do MOVOOK. Personaliza em custom.css, carregado depois deste ficheiro. */
+:root{--ui-radius:18px;--ui-gap:1rem;--ui-shadow:0 14px 40px rgba(0,0,0,.08)}
+[hidden]{display:none!important}
+body{line-height:1.55;background:var(--bg);-webkit-font-smoothing:antialiased}
+header{padding:1.5rem 1rem 1.2rem;gap:1rem;align-items:center}
+h1{font-size:1.35rem;letter-spacing:-.035em;white-space:nowrap}
+header nav{gap:.4rem;align-items:center;position:relative}
+header nav>button[data-view],header nav>#addBtn,header nav>#addLink,.ui-more>summary{min-height:42px;padding:.5rem .9rem;border-radius:12px;font-weight:550;font-size:.9rem}
+header nav>button[data-view]{border-color:transparent;color:var(--muted)}
+header nav>button[data-view]:hover{background:var(--card);color:var(--text)}
+header nav>button[data-view].on{background:var(--accent);color:white;box-shadow:0 4px 14px color-mix(in srgb,var(--accent) 22%,transparent)}
+header nav>button[data-view="library"]{order:1}
+header nav>button[data-view="shelves"]{order:2}
+header nav>button[data-view="stats"]{order:3}
+header nav>#addBtn,header nav>#addLink{order:4;margin-left:.3rem}
+.ui-more{order:5;position:relative}
+.ui-more>summary{list-style:none;cursor:pointer;border:1px solid var(--line);background:var(--card);user-select:none}
+.ui-more>summary::-webkit-details-marker{display:none}
+.ui-more[open]>summary{border-color:var(--accent)}
+.ui-more-panel{position:absolute;right:0;top:calc(100% + .65rem);z-index:50;min-width:250px;max-width:calc(100vw - 2rem);display:grid;gap:.25rem;padding:.55rem;background:var(--card);border:1px solid var(--line);border-radius:16px;box-shadow:var(--ui-shadow)}
+.ui-more-panel button,.ui-more-panel a{display:flex;align-items:center;text-align:left;justify-content:flex-start;width:100%;min-height:42px;padding:.65rem .8rem;border:0;border-radius:10px;background:transparent;color:var(--text);font-size:.92rem;text-decoration:none;cursor:pointer}
+.ui-more-panel button:hover,.ui-more-panel a:hover{background:color-mix(in srgb,var(--accent) 10%,var(--card));color:var(--accent)}
+main{padding-top:.4rem}
+.tabs{gap:.4rem;padding:.5rem 0 1rem;scrollbar-width:thin}
+.tabs button{padding:.4rem .85rem;font-size:.9rem;border-radius:10px;border-color:transparent;color:var(--muted)}
+.tabs button.on{background:var(--card);color:var(--accent);border-color:var(--line);font-weight:600}
+.controls{gap:.65rem;margin:0 0 1.4rem}
+.controls input,.controls select{min-height:46px;border-radius:12px;padding:.65rem .85rem}
+.controls input[type="search"]{grid-column:1/-1}
+.grid,.favgrid{gap:var(--ui-gap);grid-template-columns:repeat(auto-fill,minmax(160px,1fr))}
+.card{border-radius:var(--ui-radius);transition:transform .16s ease,box-shadow .16s ease,border-color .16s ease}
+.card:hover{transform:translateY(-3px);box-shadow:var(--ui-shadow);border-color:color-mix(in srgb,var(--accent) 35%,var(--line))}
+.info{padding:.75rem .8rem .9rem}
+.info strong{line-height:1.35;font-size:.94rem}
+.info small{display:block;margin-top:.25rem;font-size:.78rem}
+.badge,.favstar{backdrop-filter:blur(8px)}
+dialog{border-radius:22px;max-width:760px;width:calc(100% - 2rem);box-shadow:0 24px 90px rgba(0,0,0,.25);scrollbar-width:thin;overscroll-behavior:contain}
+dialog::backdrop{background:rgba(5,7,15,.6);backdrop-filter:blur(4px)}
+.m{padding:1.4rem;gap:1rem}
+.m h2{letter-spacing:-.025em}
+.form input,.form select,.form textarea{border-radius:11px;padding:.65rem .8rem}
+.form label{line-height:1.45}
+.form textarea{min-height:115px}
+.btn{border-radius:11px;padding:.5rem .85rem;min-height:40px}
+.ui-dialog-actions{display:flex;justify-content:flex-end;align-items:center;flex-wrap:wrap;gap:.6rem;grid-column:1/-1;border-top:1px solid var(--line);padding-top:1rem;margin-top:.4rem}
+.ui-dialog-actions .close{border-radius:11px;min-height:40px;padding:.5rem .9rem;justify-self:end}
+.ui-dialog-actions button{flex:0 0 auto}
+#ui-about{max-width:580px}
+#ui-about h2{margin:0}
+#ui-about footer{border:1px solid var(--line);border-radius:14px;background:var(--bg)}
+#ui-about footer p{font-size:.85rem}
+.stat{border-radius:var(--ui-radius)}
+:focus-visible{outline:3px solid color-mix(in srgb,var(--accent) 60%,transparent);outline-offset:3px}
+@media(max-width:700px){header{padding-top:1rem;gap:.8rem}header h1{width:100%}header nav{width:100%;flex-wrap:wrap}header nav>button[data-view]{flex:1;padding:.5rem .6rem}header nav>#addBtn,header nav>#addLink{margin-left:0}.ui-more-panel{min-width:230px}.grid,.favgrid{grid-template-columns:repeat(auto-fill,minmax(135px,1fr));gap:.75rem}.controls{grid-template-columns:repeat(2,minmax(0,1fr))}.m{padding:1rem}.info{padding:.6rem}.m .top{gap:.8rem}.m .top img{width:85px}dialog{width:calc(100% - 1rem);max-height:92vh}}
+@media(prefers-reduced-motion:reduce){.card{transition:none}.card:hover{transform:none}}
