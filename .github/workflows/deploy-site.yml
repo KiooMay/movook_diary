@@ -2,7 +2,7 @@ name: Deploy site
 on:
   push:
     branches: [main]
-    paths: ["media/**", "data/**", "site-src/**", "scripts/build-site.mjs", "scripts/book-metadata.test.mjs", "scripts/connect-books-proxy.mjs", "scripts/books-proxy.test.mjs", "scripts/media-metadata.test.mjs", "scripts/simplify-statistics.mjs", "scripts/simplify-statistics.test.mjs", "scripts/ai-insights.mjs", "scripts/connect-account-profile.mjs", "scripts/account-profile.test.mjs", "scripts/connect-avatar.mjs", "scripts/avatar.test.mjs"]
+    paths: ["media/**", "data/**", "site-src/**", "scripts/build-site.mjs", "scripts/book-metadata.test.mjs", "scripts/connect-books-proxy.mjs", "scripts/books-proxy.test.mjs", "scripts/media-metadata.test.mjs", "scripts/simplify-statistics.mjs", "scripts/simplify-statistics.test.mjs", "scripts/ai-insights.mjs", "scripts/connect-account-profile.mjs", "scripts/account-profile.test.mjs", "scripts/connect-avatar.mjs", "scripts/avatar.test.mjs", "scripts/retire-worker-ui.mjs", "scripts/retire-worker-ui.test.mjs"]
   workflow_run:
     workflows: ["Add media", "Remove media", "Edit media", "AI enrich"]
     types: [completed]
@@ -40,6 +40,7 @@ jobs:
       - run: node scripts/simplify-statistics.test.mjs
       - run: node scripts/account-profile.test.mjs
       - run: node scripts/avatar.test.mjs
+      - run: node scripts/retire-worker-ui.test.mjs
       - run: node scripts/build-site.mjs
       - name: Connect account importer and metadata completion
         run: |
@@ -63,6 +64,7 @@ jobs:
       - run: node scripts/simplify-statistics.mjs
       - run: node scripts/connect-account-profile.mjs
       - run: node scripts/connect-avatar.mjs
+      - run: node scripts/retire-worker-ui.mjs
       - run: node --check _site/book-metadata.mjs
       - run: node --check _site/interface.mjs
       - uses: actions/configure-pages@v5
