@@ -1,0 +1,12 @@
+import assert from 'node:assert/strict';
+import {validateDisplayName,accountLabel,saveDisplayName} from '../site-src/account-profile.mjs';
+import {connectAccountProfile} from './connect-account-profile.mjs';
+assert.equal(validateDisplayName('  Tiago   Lopes '),'Tiago Lopes');assert.equal(validateDisplayName('Ana\u0301'),'Aná');
+assert.throws(()=>validateDisplayName('A'));assert.throws(()=>validateDisplayName('A'.repeat(41)));assert.throws(()=>validateDisplayName('Ana\u202e'));
+assert.equal(accountLabel(null),'Conta');assert.equal(accountLabel({email:'private@example.com'}),'Conta');assert.equal(accountLabel({user_metadata:{display_name:'Tiago'}}),'Tiago');
+const writes=[];const user={id:'alice',email:'private@example.com',user_metadata:{other:'preserve'}};
+const client={auth:{getUser:async()=>({data:{user}}),updateUser:async payload=>{writes.push(payload);return {data:{user:{...user,user_metadata:{...user.user_metadata,...payload.data}}}};}}};
+const next=await saveDisplayName(client,'alice',' Tiago Lopes ');assert.equal(next.id,'alice');assert.equal(next.email,user.email);assert.equal(next.user_metadata.other,'preserve');assert.deepEqual(writes,[{data:{display_name:'Tiago Lopes'}}]);
+await assert.rejects(saveDisplayName(client,'bob','Bob'),/conta mudou/);assert.equal(writes.length,1);await assert.rejects(saveDisplayName(client,'alice','Name',()=> 'bob'),/conta mudou/);assert.equal(writes.length,1);
+const changed=connectAccountProfile("acctBtn.textContent = user ? user.email.split('@')[0] : 'Conta';");assert.ok(changed.includes('__movookProfile?.label(user)'));assert.ok(!changed.includes('user.email'));assert.throws(()=>connectAccountProfile('other source'));
+console.log('Display name validation, per-user save payload, account guards and label integration tests passed');
