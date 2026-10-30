@@ -7,3 +7,5 @@ header nav>#avatarBtn{order:0;width:var(--avatar-size);height:var(--avatar-size)
 .avatar-form{padding-bottom:1rem;border-bottom:1px solid var(--line)}
 .avatar-form h3{margin:0;font-size:1rem}
 .avatar-form input[type=file]{max-width:100%}
+/* O botão permanece no DOM para o avatar abrir a conta. Sem sessão, continua acessível no menu. */
+header nav:has(>#avatarBtn:not([hidden])) .ui-more-panel #accountBtn{display:none!important}
