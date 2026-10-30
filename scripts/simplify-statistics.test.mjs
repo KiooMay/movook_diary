@@ -1,0 +1,12 @@
+import assert from 'node:assert/strict';
+import {simplifyStatistics} from './simplify-statistics.mjs';
+const fixture="function renderInsights(){const s = insights?.summary, recs = insights?.recommendations || [];if (!s?.text && !recs.length){return;}const html=`${s?.text ? `<h2 class=\"sec\">✨ Resumo de ${esc(s.year)}</h2><div class=\"stat txt\">${esc(s.text)}</div>` : ''}${recs.length?'recommendations':''}`;}\nfunction renderStats(){return `itens na biblioteca; nota média; Por tipo;<h2 class=\"sec\">Géneros mais frequentes</h2>${bars(count(items, (i) => i.genres))}Géneros com melhor nota média`; }";
+const output=simplifyStatistics(fixture);
+assert.ok(!output.includes('Resumo de'));
+assert.ok(!output.includes('Géneros mais frequentes'));
+assert.ok(!output.includes('insights?.summary'));
+for(const label of ['recommendations','itens na biblioteca','nota média','Por tipo','Géneros com melhor nota média'])assert.ok(output.includes(label));
+new Function(output);
+assert.throws(()=>simplifyStatistics('unexpected layout'));
+assert.throws(()=>simplifyStatistics(fixture+fixture));
+console.log('Statistics removal, preserved sections and generated JavaScript syntax tests passed');
