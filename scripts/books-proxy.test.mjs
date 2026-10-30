@@ -1,0 +1,11 @@
+import assert from 'node:assert/strict';
+import {createGoogleBooksReader} from '../site-src/books-proxy.mjs';
+import {connectBookProxy} from './connect-books-proxy.mjs';
+let time=1000,uid='alice',calls=0,mode='ok';const tokens=[];
+const client={auth:{getSession:async()=>({data:{session:{access_token:'fake-user-token',user:{id:uid}}}})},functions:{invoke:async(name,args)=>{calls++;assert.equal(name,'books-search');assert.deepEqual(Object.keys(args.body).sort(),['maxResults','q']);assert.ok(!JSON.stringify(args).includes('GOOGLE_BOOKS_API_KEY'));tokens.push(args.headers.Authorization);if(mode==='quota')return {error:{context:Response.json({error:'Google Books recusou a consulta',provider_status:429,reasons:['rateLimitExceeded'],retry_after:5},{status:429})}};if(mode==='permission')return {error:{context:Response.json({error:'Google Books recusou a consulta',provider_status:403,reasons:['accessNotConfigured']},{status:502})}};return {data:{totalItems:1,items:[{id:'book'}]}};}}};
+const read=createGoogleBooksReader(()=>({client,uid}),()=>time),url='https://www.googleapis.com/books/v1/volumes?q=isbn%3A9789892343372&maxResults=6';
+await read(url);await read(url);assert.equal(calls,1);assert.equal(tokens[0],'Bearer fake-user-token');uid='bob';await read(url);assert.equal(calls,2);
+mode='quota';const other='https://www.googleapis.com/books/v1/volumes?q=another';await assert.rejects(read(other),/rateLimitExceeded/);const count=calls;await assert.rejects(read(other),/pausa/);assert.equal(calls,count);time+=6000;mode='ok';await read(other);assert.equal(calls,count+1);
+mode='permission';await assert.rejects(read(other+'-permission'),/Google HTTP 403.*accessNotConfigured/);
+const routed=connectBookProxy("async function read(url){const host=new URL(url).hostname;if(blocked.has(host))throw Error('blocked');}");assert.ok(routed.includes("if(host==='www.googleapis.com')return readGoogleBooks(url);if(blocked.has(host))"));assert.throws(()=>connectBookProxy('bad'));
+console.log('Proxy routing, session, cache, account isolation and expiring cooldown tests passed');
