@@ -1,0 +1,15 @@
+import assert from 'node:assert/strict';
+import {isbnOf,description,lookup,metadataPatch} from '../site-src/book-metadata.mjs';
+assert.equal(isbnOf({external_ids:{isbn:'9780140328721'}}),'9780140328721');
+assert.equal(isbnOf({external_ids:{isbn:'9780140328722'}}),'');
+assert.equal(isbnOf({external_ids:{isbn:'0451526538'}}),'0451526538');
+assert.equal(description({value:' Text '}),'Text');
+const original={type:'book',title:'Book',creators:['Writer'],external_ids:{isbn:'9780140328721'},rating:8,review:'Private',status:'done',tags:['personal'],date_finished:'2020-01-01',cover:'',synopsis:''};
+const before=JSON.stringify(original);
+const records={'/isbn/9780140328721.json':{key:'/books/OL1M',covers:[42],works:[{key:'/works/OL1W'}]},'/works/OL1W.json':{description:{value:'Description'}}};
+const found=await lookup(original,async p=>records[p]||null);assert.equal(found.cover_scope,'edition');assert.equal(found.synopsis,'Description');assert.equal(JSON.stringify(original),before);
+const patch=metadataPatch(original,found);assert.equal(patch.metadata_pending,false);assert.equal(patch.rating,undefined);assert.equal(patch.review,undefined);assert.equal(patch.status,undefined);assert.equal(patch.tags,undefined);
+assert.deepEqual(metadataPatch({...original,cover:'manual',synopsis:'manual'},found),{});
+const ambiguous=await lookup({title:'Book',creators:['Writer']},async p=>({numFound:2,docs:[{title:'Book',author_name:['Writer'],key:'/works/OL1W'},{title:'Book',author_name:['Writer'],key:'/works/OL2W'}]}));assert.equal(ambiguous.state,'needs_review');
+const absent=await lookup({title:'Book',creators:['Writer']},async p=>({numFound:0,docs:[]}));assert.equal(absent.state,'not_found');
+console.log('All metadata tests passed');
