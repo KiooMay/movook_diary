@@ -1,0 +1,13 @@
+import assert from 'node:assert/strict';
+import {makePatch,missing,safeURL,searchMedia} from '../site-src/media-metadata.mjs';
+const old={type:'movie',title:'My title',rating:9,review:'Private review',status:'done',tags:['mine'],date_finished:'2020-01-01',cover:'',synopsis:'',year:2001,creators:[],genres:[],length:{runtime_min:110},external_ids:{imdb:'tt123'}};
+const candidate={provider:'tmdb',id:1,type:'movie',title:'Localized title',cover:'https://image.tmdb.org/t/p/w500/a.jpg',synopsis:'Sinopse',synopsis_language:'pt-PT',year:2002,creators:['Director'],genres:['Drama'],length:{runtime_min:120,episodes:5},external_ids:{imdb:'tt123',tmdb:'1'},source_url:'https://www.themoviedb.org/movie/1'};
+const before=JSON.stringify(old),patch=makePatch(old,candidate);assert.equal(JSON.stringify(old),before);for(const key of ['rating','review','status','tags','date_finished','title','year'])assert.equal(patch[key],undefined);assert.equal(patch.length.runtime_min,110);assert.equal(patch.length.episodes,5);assert.equal(patch.external_ids.imdb,'tt123');assert.equal(patch.metadata_sources.synopsis.language,'pt-PT');assert.equal(patch.metadata_pending,false);
+assert.equal(makePatch({...old,cover:'https://example.com/manual.jpg'},candidate).cover,undefined);
+assert.throws(()=>makePatch(old,{...candidate,type:'series'}),/correção/);assert.equal(makePatch(old,{...candidate,type:'series'},{},true).type,'series');
+assert.throws(()=>makePatch(old,{...candidate,external_ids:{imdb:'tt999'}}),/identificador/);
+const manual=makePatch(old,{provider:'manual',type:'movie'},{cover:'https://example.com/cover.jpg',synopsis:'Texto manual',language:'pt-PT'});assert.equal(manual.metadata_sources.synopsis.provider,'manual');assert.equal(manual.synopsis,'Texto manual');
+assert.equal(safeURL('javascript:alert(1)'),'');assert.equal(safeURL('https://127.0.0.1/cover'),'');assert.ok(missing(old).includes('cover'));
+const calls=[];const found=await searchMedia(old,async p=>{calls.push({...p});return {candidates:p.imdb_id?[]:[candidate]};});assert.equal(calls[0].imdb_id,'tt123');assert.equal(calls[1].imdb_id,undefined);assert.equal(found.candidates.length,1);
+await searchMedia({type:'anime',title:'Anime',external_ids:{myanimelist:'1535'}},async p=>{assert.equal(p.mal_id,'1535');return {candidates:[{provider:'jikan',id:1535}]};});
+console.log('Media patch preservation, manual edits, ID matching, type correction and fallback tests passed');
