@@ -1,0 +1,31 @@
+/* Ajustes móveis e da conta. Personaliza em custom.css. */
+.password-control{position:relative;min-width:0;width:100%}
+.password-control input{padding-right:3.2rem}
+.password-control .password-toggle{position:absolute;right:.25rem;top:50%;transform:translateY(-50%);width:42px;height:42px;display:grid;place-items:center;padding:0;border:0;border-radius:9px;background:transparent;color:var(--muted);cursor:pointer}
+.password-toggle svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.password-toggle:hover{color:var(--accent)}
+.ui-more:not([open])>.ui-more-panel{display:none}
+header,main,nav,.m,.form,.row,.stat,.controls,.info{min-width:0}
+.form select,.controls select{max-width:100%;min-width:0}
+.form label>span{min-width:0;overflow-wrap:anywhere}
+.txt,.muted,.info strong,.stat{overflow-wrap:anywhere}
+.bar span{min-width:0;overflow-wrap:anywhere}
+@media(max-width:700px){
+  html,body{max-width:100%}
+  header nav{gap:.35rem}
+  header nav>button[data-view]{font-size:.84rem;min-width:0;padding:.5rem .4rem}
+  .ui-more-panel{position:fixed;left:var(--menu-left,.5rem);right:auto;top:var(--menu-top,7rem);width:var(--menu-width,calc(100vw - 1rem));min-width:0;max-width:none;max-height:var(--menu-maxHeight,calc(100dvh - 8rem));overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;box-sizing:border-box;z-index:1000}
+  .ui-more-panel button,.ui-more-panel a{white-space:normal;overflow-wrap:anywhere;min-height:44px}
+  dialog[open]{position:fixed;left:.5rem;right:.5rem;top:calc(var(--visual-top,0px) + .5rem);bottom:auto;margin:0 auto;width:calc(100% - 1rem);max-width:calc(100vw - 1rem);max-height:calc(var(--usable-vh,100dvh) - 1rem);overflow:auto}
+  .m{padding:1rem;min-width:0}
+  .form input,.form select,.form textarea{box-sizing:border-box;max-width:100%;min-width:0;font-size:16px}
+  .form label[style*="display:flex"]{flex-wrap:wrap}
+  .row{flex-wrap:wrap}
+  .row button,.row .btn{max-width:100%;white-space:normal;overflow-wrap:anywhere}
+  .ui-dialog-actions{position:sticky;bottom:-1rem;z-index:2;background:var(--card);padding-bottom:.5rem;justify-content:flex-end}
+  .ui-dialog-actions button{min-height:44px;min-width:0}
+  .m .top>div{min-width:0}
+  .m h2{overflow-wrap:anywhere}
+  .stats{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media(max-width:360px){.controls{grid-template-columns:1fr}.bar{grid-template-columns:minmax(0,90px) minmax(0,1fr) 28px;gap:.35rem}}
