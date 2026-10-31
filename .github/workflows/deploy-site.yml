@@ -2,7 +2,7 @@ name: Deploy site
 on:
   push:
     branches: [main]
-    paths: ["media/**", "data/**", "site-src/**", "scripts/build-site.mjs", "scripts/book-metadata.test.mjs", "scripts/connect-books-proxy.mjs", "scripts/books-proxy.test.mjs", "scripts/media-metadata.test.mjs", "scripts/simplify-statistics.mjs", "scripts/simplify-statistics.test.mjs", "scripts/ai-insights.mjs", "scripts/connect-account-profile.mjs", "scripts/account-profile.test.mjs", "scripts/connect-avatar.mjs", "scripts/avatar.test.mjs", "scripts/retire-worker-ui.mjs", "scripts/retire-worker-ui.test.mjs", "scripts/private-library.mjs", "scripts/mobile-account.test.mjs"]
+    paths: ["media/**", "data/**", "site-src/**", "scripts/build-site.mjs", "scripts/book-metadata.test.mjs", "scripts/connect-books-proxy.mjs", "scripts/books-proxy.test.mjs", "scripts/media-metadata.test.mjs", "scripts/simplify-statistics.mjs", "scripts/simplify-statistics.test.mjs", "scripts/ai-insights.mjs", "scripts/connect-account-profile.mjs", "scripts/account-profile.test.mjs", "scripts/connect-avatar.mjs", "scripts/avatar.test.mjs", "scripts/retire-worker-ui.mjs", "scripts/retire-worker-ui.test.mjs", "scripts/private-library.mjs", "scripts/mobile-account.test.mjs", "scripts/clean-navigation.mjs", "scripts/navigation-auth.test.mjs"]
   workflow_run:
     workflows: ["Add media", "Remove media", "Edit media", "AI enrich"]
     types: [completed]
@@ -34,6 +34,7 @@ jobs:
       - run: node --check site-src/account-profile.mjs
       - run: node --check site-src/avatar.mjs
       - run: node --check site-src/mobile-account.mjs
+      - run: node --check site-src/navigation-auth.mjs
       - run: node --check scripts/ai-insights.mjs
       - run: node scripts/book-metadata.test.mjs
       - run: node scripts/books-proxy.test.mjs
@@ -43,6 +44,7 @@ jobs:
       - run: node scripts/avatar.test.mjs
       - run: node scripts/retire-worker-ui.test.mjs
       - run: node scripts/mobile-account.test.mjs
+      - run: node scripts/navigation-auth.test.mjs
       - run: node scripts/build-site.mjs
       - name: Connect account importer and metadata completion
         run: |
@@ -53,7 +55,7 @@ jobs:
           const needle='sb = createClient(SUPABASE_URL, SUPABASE_KEY);';
           if(!html.includes(needle)||!html.includes('</body>')) throw Error('Importer integration target missing');
           html=html.replace(needle,needle+' window.__movookClient = sb;');
-          html=html.replace('</body>','<script type="module" src="book-metadata.mjs"></script>\n<script type="module" src="importer.mjs"></script>\n<script type="module" src="media-metadata.mjs"></script>\n<script type="module" src="interface.mjs"></script>\n<script type="module" src="account-profile.mjs"></script>\n<script type="module" src="avatar.mjs"></script>\n<script type="module" src="mobile-account.mjs"></script>\n</body>');
+          html=html.replace('</body>','<script type="module" src="book-metadata.mjs"></script>\n<script type="module" src="importer.mjs"></script>\n<script type="module" src="media-metadata.mjs"></script>\n<script type="module" src="interface.mjs"></script>\n<script type="module" src="account-profile.mjs"></script>\n<script type="module" src="avatar.mjs"></script>\n<script type="module" src="mobile-account.mjs"></script>\n<script type="module" src="navigation-auth.mjs"></script>\n</body>');
           fs.writeFileSync(path,html);
           const importerPath='_site/importer.mjs';
           let importer=fs.readFileSync(importerPath,'utf8');
@@ -66,6 +68,7 @@ jobs:
       - run: node scripts/simplify-statistics.mjs
       - run: node scripts/connect-account-profile.mjs
       - run: node scripts/connect-avatar.mjs
+      - run: node scripts/clean-navigation.mjs
       - run: node scripts/retire-worker-ui.mjs
       - run: node scripts/private-library.mjs
       - run: node --check _site/book-metadata.mjs

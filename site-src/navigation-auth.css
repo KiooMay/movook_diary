@@ -1,0 +1,19 @@
+/* Navegação sem sobreposição. Personaliza em custom.css. */
+header nav{display:flex;align-items:center;justify-content:flex-end;gap:.7rem;flex:1;min-width:0;flex-wrap:wrap}
+.nav-pages{order:1;display:flex;align-items:center;gap:.3rem;min-width:0;max-width:100%;flex-wrap:nowrap;overflow-x:auto;scrollbar-width:thin}
+.nav-pages>button[data-view]{flex:0 0 auto;width:auto;min-width:max-content;white-space:nowrap;line-height:1.25;min-height:42px;padding:.55rem .8rem;border:1px solid transparent;border-radius:12px;color:var(--muted);font-size:.9rem;font-weight:550}
+.nav-pages>button[data-view].on{background:var(--accent);color:#fff}
+.nav-tools{order:2;display:flex;align-items:center;justify-content:flex-end;gap:.4rem;min-width:0;flex-wrap:wrap}
+.nav-tools>#entryBtn{order:0;white-space:nowrap;background:var(--accent);color:#fff;border:1px solid var(--accent);border-radius:12px;padding:.55rem .75rem;min-height:42px;font-size:.9rem;cursor:pointer}
+.nav-tools>#refreshBtn{order:1;display:grid;place-items:center;flex:0 0 42px;width:42px;height:42px;padding:0;border:1px solid var(--line);border-radius:12px;background:var(--card);color:var(--text);font-size:1.45rem;line-height:1;cursor:pointer}
+.nav-tools>#addBtn,.nav-tools>#addLink{order:2;white-space:nowrap;margin:0}
+.nav-tools>.ui-more{order:3}
+#accountBtn{display:none!important}
+.nav-pages>#avatarBtn{flex:0 0 auto;width:var(--avatar-size,36px);height:var(--avatar-size,36px);min-width:var(--avatar-size,36px);padding:0;margin-right:.15rem;border:1px solid var(--line);border-radius:50%;display:grid;place-items:center;overflow:hidden;background:color-mix(in srgb,var(--accent) 15%,var(--card));color:var(--accent);font-weight:650;cursor:pointer}
+.nav-tools:has(#entryBtn:not([hidden]))>#addBtn,.nav-tools:has(#entryBtn:not([hidden]))>#addLink{display:none}
+#authFlowDlg{max-width:480px}
+#authFlowDlg h2{margin:0}
+#authFlowDlg [data-auth-status]:empty{display:none}
+.entry-switch{text-align:center;font-size:.9rem;margin:.2rem 0}
+.entry-link{display:inline;padding:.15rem;border:0;background:none;color:var(--accent);font:inherit;text-decoration:underline;cursor:pointer}
+@media(max-width:700px){header nav{display:grid;grid-template-columns:minmax(0,1fr);width:100%;gap:.6rem}.nav-tools{order:1;width:100%;gap:.3rem}.nav-pages{order:2;width:100%;gap:.2rem}.nav-pages>button[data-view]{flex:1 0 auto;min-width:max-content;white-space:nowrap;padding:.55rem .35rem;font-size:.8rem}.nav-tools>#entryBtn{font-size:.84rem}.nav-tools>.ui-more>summary{font-size:.84rem;padding:.55rem .7rem}#authFlowDlg{max-width:calc(100vw - 1rem)}}
