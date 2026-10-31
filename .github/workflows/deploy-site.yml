@@ -35,7 +35,8 @@ jobs:
       - run: node --check site-src/avatar.mjs
       - run: node --check site-src/mobile-account.mjs
       - run: node --check site-src/navigation-auth.mjs
-      - run: node --check scripts/ai-insights.mjs
+      - run: node --check site-src/auto-enrich.mjs
+      - run: node scripts/ai-insights.mjs
       - run: node scripts/book-metadata.test.mjs
       - run: node scripts/books-proxy.test.mjs
       - run: node scripts/media-metadata.test.mjs
@@ -55,7 +56,7 @@ jobs:
           const needle='sb = createClient(SUPABASE_URL, SUPABASE_KEY);';
           if(!html.includes(needle)||!html.includes('</body>')) throw Error('Importer integration target missing');
           html=html.replace(needle,needle+' window.__movookClient = sb;');
-          html=html.replace('</body>','<script type="module" src="book-metadata.mjs"></script>\n<script type="module" src="importer.mjs"></script>\n<script type="module" src="media-metadata.mjs"></script>\n<script type="module" src="interface.mjs"></script>\n<script type="module" src="account-profile.mjs"></script>\n<script type="module" src="avatar.mjs"></script>\n<script type="module" src="mobile-account.mjs"></script>\n<script type="module" src="navigation-auth.mjs"></script>\n</body>');
+          html=html.replace('</body>','<script type="module" src="book-metadata.mjs"></script>\n<script type="module" src="importer.mjs"></script>\n<script type="module" src="media-metadata.mjs"></script>\n<script type="module" src="interface.mjs"></script>\n<script type="module" src="account-profile.mjs"></script>\n<script type="module" src="avatar.mjs"></script>\n<script type="module" src="mobile-account.mjs"></script>\n<script type="module" src="navigation-auth.mjs"></script>\n<script type="module" src="auto-enrich.mjs"></script>\n</body>');
           fs.writeFileSync(path,html);
           const importerPath='_site/importer.mjs';
           let importer=fs.readFileSync(importerPath,'utf8');
