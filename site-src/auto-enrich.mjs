@@ -12,7 +12,11 @@ function init(){
       return original(item);
     };
   };
-  wrap();
+  let tries=0;
+  const timer=setInterval(()=>{
+    if(window.__movookAccount?.addPersonal){wrap();clearInterval(timer);}
+    else if(++tries>240)clearInterval(timer);
+  },250);
   window.addEventListener('movook:account',()=>queueMicrotask(wrap));
 }
 if(typeof document!=='undefined')init();
