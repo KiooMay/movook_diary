@@ -1,10 +1,55 @@
 {
-  "generated": "2026-10-29T08:51:33.955Z",
-  "hash": "7516020841fcd3648b33b92b134b180dbb93f181",
+  "generated": "2026-11-02T18:00:53.542Z",
+  "hash": "3e7c3b7b5f1df216fd9a7b064da822108ce5d030",
   "year": 2026,
-  "summary": {
-    "year": 2026,
-    "text": "Viste uma variedade de conteúdos emocionais este ano, com uma nota média de 7.83. Leste um livro e viste dois animes, com géneros como Terror, Mistério e Sobrenatural a dominar as tuas escolhas. Os teus favoritos incluem Shiki, Crime e castigo e Another, que te deixaram uma impressão duradoura."
-  },
-  "recommendations": []
+  "recommendations": [
+    {
+      "title": "Spirited Away",
+      "type": "movie",
+      "year": 2001,
+      "why": "Mágico e aventura, como A Viagem de Chihiro"
+    },
+    {
+      "title": "Death Note",
+      "type": "anime",
+      "year": 2006,
+      "why": "Mistério e suspense, como Shiki"
+    },
+    {
+      "title": "O Alquimista",
+      "type": "book",
+      "year": 1988,
+      "why": "Mistério e auto-descoberta, como Crime e castigo"
+    },
+    {
+      "title": "The Shining",
+      "type": "movie",
+      "year": 1980,
+      "why": "Sombrio e intenso, como Possessão"
+    },
+    {
+      "title": "Fullmetal Alchemist: Brotherhood",
+      "type": "anime",
+      "year": 2009,
+      "why": "Aventura e fantasia, como A Viagem de Chihiro"
+    },
+    {
+      "title": "O Código Da Vinci",
+      "type": "book",
+      "year": 2003,
+      "why": "Mistério e suspense, como Crime e castigo"
+    },
+    {
+      "title": "The Exorcist",
+      "type": "movie",
+      "year": 1973,
+      "why": "Terror e sombrio, como Possessão"
+    },
+    {
+      "title": "Monster",
+      "type": "anime",
+      "year": 2004,
+      "why": "Mistério e suspense, como Shiki"
+    }
+  ]
 }
