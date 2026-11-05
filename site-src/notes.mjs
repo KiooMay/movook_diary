@@ -64,6 +64,9 @@ dlg.close();await load();
 finally{busy=false;}
 };
 }
+function setActive(target){
+nav.querySelectorAll('button[data-view]').forEach(b=>b.classList.toggle('on',b===target));
+}
 section.addEventListener('click',async e=>{
 const filterBtn=e.target.closest('#noteFilters button');
 if(filterBtn){filter=filterBtn.dataset.filter;section.querySelectorAll('#noteFilters button').forEach(b=>b.classList.toggle('on',b===filterBtn));render();return;}
@@ -77,6 +80,7 @@ if(del){const n=notes.find(x=>String(x.id)===del.dataset.delete);if(!confirm(`Ap
 });
 nav.addEventListener('click',e=>{
 const t=e.target.closest('button[data-view]');if(!t)return;
+setActive(t);
 section.hidden=t.dataset.view!=='notes';
 if(!section.hidden)load();
 },true);
