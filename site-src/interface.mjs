@@ -1,3 +1,5 @@
+const heading=document.querySelector('header h1');
+if(heading)heading.textContent='MOVOOK';
 const custom=document.querySelector('link[href="custom.css"]');
 if(custom)document.head.append(custom);
 if(!document.querySelector('link[data-movook-interface]')){const link=document.createElement('link');link.rel='stylesheet';link.href='interface.css';link.dataset.movookInterface='';if(custom)custom.before(link);else document.head.append(link);}
