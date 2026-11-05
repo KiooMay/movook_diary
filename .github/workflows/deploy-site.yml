@@ -74,7 +74,21 @@ jobs:
           if(importer.split(hook).length!==2) throw Error('Import completion hook target missing or ambiguous');
           importer=importer.replace(hook,hook+" window.__movookMetadata?.offer();");
           fs.writeFileSync(importerPath,importer);
+          const metadataPath='_site/media-metadata.mjs';
+          let metadata=fs.readFileSync(metadataPath,'utf8');
+          function replaceOnce(from,to){if(metadata.split(from).length!==2)throw Error('Metadata integration target missing or ambiguous: '+from);metadata=metadata.replace(from,to);}
+          replaceOnce('export function missing(i){',"export function needsCompletion(i){return ['cover','synopsis'].some(k=>typeof i[k]!=='string'||!i[k].trim());}\nexport function missing(i){");
+          replaceOnce('missing(x.r.data).length&&(!type||x.r.data.type===type)','needsCompletion(x.r.data)&&(!type||x.r.data.type===type)');
+          replaceOnce("missing(r.data).join(', ')","['cover','synopsis'].filter(k=>typeof r.data[k]!=='string'||!r.data[k].trim()).join(', ')");
+          replaceOnce("missing(i).length?' · Ficha incompleta':''","needsCompletion(i)?' · Ficha incompleta':''");
+          replaceOnce("guard();await window.__movookAccount.refresh();$('[data-results]').textContent='';", "guard();await window.__movookAccount.refresh();guard();rows=await loadAll(client,owner);guard();list();decorate();$('[data-results]').textContent='';");
+          replaceOnce('Campos não encontrados continuam pendentes.','Só os itens ainda sem capa ou sinopse continuam nesta lista.');
+          fs.writeFileSync(metadataPath,metadata);
+          const {needsCompletion}=await import('./_site/media-metadata.mjs');
+          if(needsCompletion({cover:'https://example.com/cover.jpg',synopsis:'Texto'}))throw Error('Complete card must not be listed');
+          for(const item of [{},{cover:'https://example.com/cover.jpg'},{synopsis:'Texto'},{cover:' ',synopsis:'Texto'}])if(!needsCompletion(item))throw Error('Missing cover/synopsis must be listed');
           NODE
+      - run: node --check _site/media-metadata.mjs
       - run: node scripts/connect-books-proxy.mjs
       - run: node scripts/simplify-statistics.mjs
       - run: node scripts/connect-account-profile.mjs
