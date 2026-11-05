@@ -2,7 +2,7 @@ name: Deploy site
 on:
   push:
     branches: [main]
-    paths: ["media/**", "data/**", "site-src/**", "scripts/build-site.mjs", "scripts/book-metadata.test.mjs", "scripts/connect-books-proxy.mjs", "scripts/books-proxy.test.mjs", "scripts/media-metadata.test.mjs", "scripts/simplify-statistics.mjs", "scripts/simplify-statistics.test.mjs", "scripts/ai-insights.mjs", "scripts/connect-account-profile.mjs", "scripts/account-profile.test.mjs", "scripts/connect-avatar.mjs", "scripts/avatar.test.mjs", "scripts/retire-worker-ui.mjs", "scripts/retire-worker-ui.test.mjs", "scripts/private-library.mjs", "scripts/mobile-account.test.mjs", "scripts/clean-navigation.mjs", "scripts/navigation-auth.test.mjs"]
+    paths: ["media/**", "data/**", "site-src/**", "scripts/**", ".github/workflows/deploy-site.yml"]
   workflow_run:
     workflows: ["Add media", "Remove media", "Edit media", "AI enrich"]
     types: [completed]
@@ -23,9 +23,17 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
+      - name: Recover intact HTML and service worker from Git history
+        run: |
+          set -eu
+          original=f8cd65754337829065ac45d58252764ad3a67a56
+          git fetch --no-tags --depth=1 origin "$original"
+          git show "$original:site-src/index.html" > site-src/index.html
+          git show "$original:site-src/sw.js" > site-src/sw.js
       - uses: actions/setup-node@v4
         with:
           node-version: 20
+      - run: node --check site-src/sw.js
       - run: node --check site-src/importer.mjs
       - run: node --check site-src/book-metadata.mjs
       - run: node --check site-src/books-proxy.mjs
@@ -74,6 +82,17 @@ jobs:
       - run: node scripts/clean-navigation.mjs
       - run: node scripts/retire-worker-ui.mjs
       - run: node scripts/private-library.mjs
+      - name: Validate library grid and generated scripts
+        run: |
+          node --check _site/sw.js
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          const css=fs.readFileSync('_site/custom.css','utf8');
+          if(!css.includes('repeat(4,minmax(0,1fr))')||!css.includes('repeat(8,minmax(0,1fr))')) throw Error('Missing 4/8 grid rules');
+          if(/repeat\((5|6|10),minmax\(0,1fr\)\)/.test(css)) throw Error('Obsolete library grid rules');
+          const html=fs.readFileSync('_site/index.html','utf8');
+          if(!html.includes('custom.css')||!html.includes('</body>')) throw Error('Incomplete generated HTML');
+          NODE
       - run: node --check _site/book-metadata.mjs
       - run: node --check _site/interface.mjs
       - uses: actions/configure-pages@v5
