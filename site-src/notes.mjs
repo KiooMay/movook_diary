@@ -64,8 +64,13 @@ dlg.close();await load();
 finally{busy=false;}
 };
 }
-function setActive(target){
+function show(view,target){
 nav.querySelectorAll('button[data-view]').forEach(b=>b.classList.toggle('on',b===target));
+const library=document.querySelector('#library'),stats=document.querySelector('#stats');
+if(library)library.hidden=view!=='library';
+if(stats)stats.hidden=view!=='stats';
+section.hidden=view!=='notes';
+if(view==='notes')load();
 }
 section.addEventListener('click',async e=>{
 const filterBtn=e.target.closest('#noteFilters button');
@@ -80,9 +85,8 @@ if(del){const n=notes.find(x=>String(x.id)===del.dataset.delete);if(!confirm(`Ap
 });
 nav.addEventListener('click',e=>{
 const t=e.target.closest('button[data-view]');if(!t)return;
-setActive(t);
-section.hidden=t.dataset.view!=='notes';
-if(!section.hidden)load();
+e.stopPropagation();
+show(t.dataset.view,t);
 },true);
 }
 if(typeof document!=='undefined')init();
