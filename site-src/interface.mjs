@@ -28,3 +28,18 @@ if(nav){
   const observer=new MutationObserver(records=>{if(records.some(r=>(r.target instanceof Element&&(r.target===nav||r.target.matches('main')||r.target.closest('dialog')))||[...r.addedNodes].some(n=>n instanceof Element&&n.matches('dialog,footer'))))refresh();});
   observer.observe(document.body,{childList:true,subtree:true});refresh();
 }
+function installCompletionSorting(){
+  if(typeof SORTS==='undefined'||typeof state==='undefined'||typeof window.setupControls!=='function'||typeof renderGrid!=='function')return;
+  const completionDate=item=>{const value=String(item.date_finished||'').trim();if(!/^\d{4}-\d{2}-\d{2}$/.test(value))return '';const parsed=new Date(value+'T00:00:00Z');return Number.isFinite(parsed.getTime())&&parsed.toISOString().slice(0,10)===value?value:'';};
+  const compare=(a,b,ascending)=>{const x=completionDate(a),y=completionDate(b);if(!x&&y)return 1;if(x&&!y)return -1;return (ascending?x.localeCompare(y):y.localeCompare(x))||String(a.title||'').localeCompare(String(b.title||''),'pt');};
+  SORTS.finishedNewest=['Visto/lido — mais recentes primeiro',(a,b)=>compare(a,b,false)];
+  SORTS.finishedOldest=['Visto/lido — mais antigos primeiro',(a,b)=>compare(a,b,true)];
+  let selected='finishedNewest';
+  const originalSetup=window.setupControls;
+  window.setupControls=function(...args){state.sort=selected;const result=originalSetup.apply(this,args);const control=document.getElementById('sort');if(control)control.value=selected;return result;};
+  document.getElementById('sort')?.addEventListener('change',event=>{if(Object.hasOwn(SORTS,event.target.value))selected=event.target.value;});
+  window.addEventListener('movook:account',()=>{selected='finishedNewest';});
+  window.setupControls();
+  renderGrid();
+}
+installCompletionSorting();
