@@ -1,18 +1,34 @@
 import fs from 'node:fs';
 import {pathToFileURL} from 'node:url';
 const accountLoad=`let libraryOwner = null;
+let librarySnapshot = null;
 async function load(first) {
   const acct = window.__movookAccount;
   const owner = acct?.user?.id || null;
-  if (owner !== libraryOwner) {
+  const ownerChanged = owner !== libraryOwner;
+  const previousY = window.scrollY;
+  const previousX = window.scrollX;
+  if (ownerChanged) {
     document.querySelectorAll('dialog[open]').forEach(dialog => dialog.close());
     $('#modal').innerHTML = ''; $('#formDlg').innerHTML = '';
     libraryOwner = owner;
   }
-  items = owner ? (acct.items || []) : [];
-  Object.assign(state, { type: 'all', q: '', status: '', genre: '', tag: '', sort: 'added' });
-  $('#q').value = '';
+  const nextItems = owner ? (acct.items || []) : [];
+  const snapshot = JSON.stringify(nextItems);
+  if (!first && !ownerChanged && snapshot === librarySnapshot) return;
+  items = nextItems;
+  librarySnapshot = snapshot;
+  if (first || ownerChanged) {
+    Object.assign(state, { type: 'all', q: '', status: '', genre: '', tag: '', sort: 'added' });
+    $('#q').value = '';
+  }
   setupControls();
+  for (const key of ['status', 'genre', 'tag', 'sort']) {
+    const control = $('#' + key);
+    if (![...control.options].some(option => option.value === state[key])) state[key] = key === 'sort' ? 'added' : '';
+    control.value = state[key];
+  }
+  $('#q').value = state.q;
   $('#types').hidden = !owner;
   $('.controls').hidden = !owner;
   if (first) bind();
@@ -21,6 +37,18 @@ async function load(first) {
   if (owner) { renderStats(); loadInsights(); }
   else { insights = null; $('#insights').innerHTML = ''; $('#statsBody').innerHTML = ''; if (!first) document.querySelector('nav button[data-view="library"]')?.click(); }
   window.dispatchEvent(new Event('movook:library'));
+  if (!first && !ownerChanged) {
+    window.scrollTo({left:previousX,top:previousY,behavior:'instant'});
+    const restoreOwner = owner;
+    const cancelRestore = () => { cancelled = true; };
+    let cancelled = false;
+    const events = ['wheel','touchstart','pointerdown','keydown'];
+    events.forEach(event => window.addEventListener(event,cancelRestore,{capture:true,passive:true}));
+    requestAnimationFrame(() => {
+      events.forEach(event => window.removeEventListener(event,cancelRestore,true));
+      if (!cancelled && libraryOwner === restoreOwner) window.scrollTo({left:previousX,top:previousY,behavior:'instant'});
+    });
+  }
 }
 `;
 const personalLoad=`let personalLoadVersion = 0;
