@@ -1,90 +1,52 @@
+export function mapsURL(value){
+  if(!String(value||'').trim())return '';
+  try{const u=new URL(value);if(u.protocol!=='https:'||u.username||u.password||u.href.length>2048)throw Error();
+    const h=u.hostname.toLowerCase();
+    if(h==='maps.app.goo.gl'||(h==='goo.gl'&&u.pathname.startsWith('/maps'))||h==='maps.google.com'||(['google.com','www.google.com','google.pt','www.google.pt'].includes(h)&&u.pathname.startsWith('/maps')))return u.href;
+  }catch{}
+  throw Error('Usa um link HTTPS do Google Maps (google.com/maps ou maps.app.goo.gl).');
+}
+export function noteMapsLink(note){try{const link=mapsURL(note.maps_url);if(link)return link;}catch{}const place=String(note.place||'').trim();return place?'https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(place):'';}
+export function matchesMarkers(note,selected){return !selected.size||(note.marker_ids||[]).some(id=>selected.has(id));}
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const validColor=c=>/^#[0-9a-f]{6}$/i.test(c||'')?c:'#5b4bdb';
+function markerStyle(marker){const c=validColor(marker.color),rgb=[1,3,5].map(i=>parseInt(c.slice(i,i+2),16)/255).map(v=>v<=.04045?v/12.92:((v+.055)/1.055)**2.4);return 'background:'+c+';color:'+(rgb[0]*.2126+rgb[1]*.7152+rgb[2]*.0722>.179?'#000':'#fff');}
 function init(){
-const nav=document.querySelector('header nav'),main=document.querySelector('main');
-if(!nav||!main)return;
-const pages=nav.querySelector('.nav-pages');if(!pages)return;
-const btn=document.createElement('button');btn.dataset.view='notes';btn.textContent='Notas';pages.append(btn);
-const section=document.createElement('section');section.id='notes';section.hidden=true;
-section.innerHTML=`<div class="notes-head"><h2 class="sec">Notas</h2><button class="btn" id="newNote">+ Nota</button></div><div class="tabs" id="noteFilters"><button data-filter="" class="on">Todas</button><button data-filter="todo">Por fazer</button><button data-filter="done">Feitas</button></div><div id="notesGrid" class="grid"></div><p id="notesEmpty" class="muted" hidden>Sem notas.</p>`;
-main.append(section);
-const style=document.createElement('style');
-style.textContent=`.notes-head{display:flex;align-items:center;justify-content:space-between;gap:.7rem}.notes-head h2{margin:0}#notesGrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:1rem}.note-card{background:var(--card);border:1px solid var(--line);border-radius:12px;overflow:hidden;text-align:left;display:flex;flex-direction:column}.note-cover{aspect-ratio:16/9;background:var(--line);display:grid;place-items:center;color:var(--muted);font-size:1.6rem}.note-cover img{width:100%;height:100%;object-fit:cover;display:block}.note-body{padding:.7rem;display:grid;gap:.35rem}.note-body strong{font-size:.98rem;line-height:1.25}.note-meta{color:var(--muted);font-size:.82rem}.note-status{align-self:start;border-radius:999px;padding:.1rem .55rem;font-size:.75rem;border:1px solid var(--line)}.note-status.done{background:color-mix(in srgb,#2e9e5b 18%,transparent);border-color:#2e9e5b;color:#20713f}.note-actions{display:flex;gap:.35rem;padding:0 .7rem .7rem;flex-wrap:wrap}.note-actions button{font-size:.8rem;padding:.3rem .6rem}.note-text{white-space:pre-wrap}`;
-document.head.append(style);
-const dlg=document.createElement('dialog');document.body.append(dlg);
-let notes=[],filter='',editing=null,busy=false;
-const $=s=>section.querySelector(s);
-const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&','<':'<','>':'>','"':'"',"'":'&#39;'}[c]));
-function session(){const sb=window.__movookClient,uid=window.__movookAccount?.user?.id;if(!sb||!uid)throw Error('Inicia sessão para usar as notas.');return{sb,uid};}
-async function imageUrl(path){if(!path)return '';const{sb}=session();const{data,error}=await sb.storage.from('user-notes').createSignedUrl(path,3600);if(error)return '';return data?.signedUrl||'';}
-async function load(){try{const{sb,uid}=session();const{data,error}=await sb.from('user_notes').select('*').eq('user_id',uid).order('created_at',{ascending:false});if(error)throw error;notes=data||[];}catch(e){notes=[];section.querySelector('#notesGrid').innerHTML=`<p class="muted">Não foi possível carregar as notas: ${esc(e.message)}</p>`;}render();}
-function render(){
-const list=notes.filter(n=>!filter||n.status===filter);
-const grid=$('#notesGrid');
-grid.innerHTML='';
-$('#notesEmpty').hidden=list.length>0;
-for(const n of list){
-const card=document.createElement('button');card.className='note-card';card.dataset.id=n.id;
-card.innerHTML=`<div class="note-cover" data-cover></div><div class="note-body"><strong>${esc(n.title)}</strong><span class="note-meta">${esc([n.place,n.note_date].filter(Boolean).join(' · '))}</span><span class="note-status ${n.status==='done'?'done':''}">${n.status==='done'?'Feito':'Por fazer'}</span></div><div class="note-actions"><button data-toggle="${n.id}">${n.status==='done'?'Marcar por fazer':'Marcar feito'}</button><button data-edit="${n.id}">Editar</button><button data-delete="${n.id}">Apagar</button></div>`;
-const cover=card.querySelector('[data-cover]');
-if(n.image_path)imageUrl(n.image_path).then(u=>{if(u)cover.innerHTML=`<img src="${esc(u)}" alt="" loading="lazy">`;});
-else cover.textContent='📝';
-grid.append(card);
-}
-}
-function openForm(note=null){
-editing=note;
-dlg.innerHTML=`<form class="m form" id="noteForm"><h2>${note?'Editar nota':'Nova nota'}</h2><label>Título<input name="title" required maxlength="120" value="${esc(note?.title||'')}"></label><label>Local (opcional)<input name="place" maxlength="120" value="${esc(note?.place||'')}"></label><label>Data (opcional)<input name="note_date" type="date" value="${esc(note?.note_date||'')}"></label><label>Estado<select name="status"><option value="todo" ${note?.status!=='done'?'selected':''}>Por fazer</option><option value="done" ${note?.status==='done'?'selected':''}>Feito</option></select></label><label>Texto<textarea name="body" required minlength="1">${esc(note?.body||'')}</textarea></label><label>Foto (opcional, até 5 MB)<input name="image" type="file" accept="image/*"></label>${note?.image_path?'<p class="muted">Já tem uma foto. Escolher outro ficheiro substitui-a.</p>':''}<p class="muted" data-status role="status"></p><div class="row"><button type="button" class="btn" data-cancel>Cancelar</button><button type="submit" class="btn fill">Guardar</button></div></form>`;
-dlg.showModal();
-const form=dlg.querySelector('form'),status=form.querySelector('[data-status]');
-form.querySelector('[data-cancel]').onclick=()=>dlg.close();
-form.onsubmit=async e=>{
-e.preventDefault();if(busy)return;
-const file=form.elements.image.files[0];
-if(file&&file.size>5*1024*1024){status.textContent='A foto deve ter menos de 5 MB.';return;}
-busy=true;status.textContent='A guardar…';
-const controls=[...form.querySelectorAll('button,input,select,textarea')];controls.forEach(n=>n.disabled=true);
-try{
-const{sb,uid}=session();
-const values={title:form.elements.title.value.trim(),place:form.elements.place.value.trim(),note_date:form.elements.note_date.value||null,status:form.elements.status.value,body:form.elements.body.value.trim(),updated_at:new Date().toISOString()};
-let image_path=note?.image_path||null;
-if(file){
-const ext=(file.name.split('.').pop()||'jpg').toLowerCase();
-image_path=`${uid}/${crypto.randomUUID()}.${ext}`;
-const up=await sb.storage.from('user-notes').upload(image_path,file,{contentType:file.type,upsert:false});
-if(up.error)throw up.error;
-}
-if(note){
-const{error}=await sb.from('user_notes').update({...values,image_path}).eq('id',note.id).eq('user_id',uid);
-if(error)throw error;
-}else{
-const{error}=await sb.from('user_notes').insert({user_id:uid,...values,image_path});
-if(error)throw error;
-}
-dlg.close();await load();
-}catch(e){status.textContent='Erro: '+e.message;controls.forEach(n=>n.disabled=false);}
-finally{busy=false;}
-};
-}
-function show(view,target){
-nav.querySelectorAll('button[data-view]').forEach(b=>b.classList.toggle('on',b===target));
-for(const id of ['library','stats','shelves']){const pane=document.getElementById(id);if(pane)pane.hidden=view!==id;}
-section.hidden=view!=='notes';
-if(view==='notes')load();
-}
-section.addEventListener('click',async e=>{
-const filterBtn=e.target.closest('#noteFilters button');
-if(filterBtn){filter=filterBtn.dataset.filter;section.querySelectorAll('#noteFilters button').forEach(b=>b.classList.toggle('on',b===filterBtn));render();return;}
-if(e.target.id==='newNote'){openForm();return;}
-const toggle=e.target.closest('[data-toggle]');
-if(toggle){try{const{sb,uid}=session();const n=notes.find(x=>String(x.id)===toggle.dataset.toggle);const status=n.status==='done'?'todo':'done';const{error}=await sb.from('user_notes').update({status,updated_at:new Date().toISOString()}).eq('id',n.id).eq('user_id',uid);if(error)throw error;await load();}catch(err){alert('Erro: '+err.message);}return;}
-const edit=e.target.closest('[data-edit]');
-if(edit){openForm(notes.find(n=>String(n.id)===edit.dataset.edit));return;}
-const del=e.target.closest('[data-delete]');
-if(del){const n=notes.find(x=>String(x.id)===del.dataset.delete);if(!confirm(`Apagar a nota "${n.title}"?`))return;try{const{sb,uid}=session();if(n.image_path)await sb.storage.from('user-notes').remove([n.image_path]);const{error}=await sb.from('user_notes').delete().eq('id',n.id).eq('user_id',uid);if(error)throw error;await load();}catch(err){alert('Erro: '+err.message);}}
-});
-nav.addEventListener('click',e=>{
-const t=e.target.closest('button[data-view]');if(!t)return;
-if(t.dataset.view==='notes'){e.stopPropagation();show('notes',t);}
-else section.hidden=true;
-},true);
+ const nav=document.querySelector('header nav'),main=document.querySelector('main'),pages=nav?.querySelector('.nav-pages');if(!nav||!main||!pages)return;
+ const button=document.createElement('button');button.dataset.view='notes';button.textContent='Notas';pages.append(button);
+ const section=document.createElement('section');section.id='notes';section.hidden=true;
+ section.innerHTML='<div class="notes-head"><h2>Notas</h2><div class="row"><button class="btn" data-manage>Marcadores</button><button class="btn" data-new>+ Nota</button></div></div><div class="tabs" data-states><button data-state="" class="on">Todas</button><button data-state="todo">Por fazer</button><button data-state="done">Feitas</button></div><fieldset class="note-marker-filters"><legend>Filtrar por marcadores</legend><div data-marker-filters></div><button class="btn" data-clear>Limpar marcadores</button><p class="muted">Seleciona vários para mostrar notas com qualquer um deles.</p></fieldset><p data-message role="status"></p><div id="notesGrid"></div><p class="muted" data-empty hidden>Sem notas para estes filtros.</p>';
+ main.append(section);
+ const style=document.createElement('style');style.textContent='.notes-head,.note-actions,.note-tags{display:flex;align-items:center;gap:.5rem;flex-wrap:wrap}.notes-head{justify-content:space-between}.notes-head h2{font-size:1rem}#notesGrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:1rem}.note-card{background:var(--card);border:1px solid var(--line);border-radius:12px;overflow:hidden}.note-cover{aspect-ratio:16/9;background:var(--line);display:grid;place-items:center}.note-cover img{width:100%;height:100%;object-fit:cover}.note-body{padding:.8rem;display:grid;gap:.5rem}.note-title{background:none;border:0;color:inherit;font:inherit;font-weight:650;text-align:left;padding:0;cursor:pointer}.note-tag{display:inline-block;border:0;border-radius:999px;padding:.2rem .6rem;font-size:.82rem;line-height:1.4}.note-marker-choice{display:inline-flex!important;align-items:center;gap:.35rem;margin:.3rem .5rem .3rem 0}.note-marker-choice input{width:auto!important}.note-marker-filters{border:1px solid var(--line);border-radius:12px;margin:.4rem 0 1rem;padding:.7rem}.note-actions{padding:0 .8rem .8rem}.note-actions button{font-size:.85rem}.note-text{white-space:pre-wrap;overflow-wrap:anywhere}.note-status{font-size:.85rem}.note-status.done{color:#2e9e5b}';document.head.append(style);
+ const dlg=document.createElement('dialog'),manager=document.createElement('dialog');document.body.append(dlg,manager);
+ let notes=[],markers=[],stateFilter='',owner='',loading=0,saving=false,markerBusy=false;
+ const selected=new Set(),$=s=>section.querySelector(s);
+ const session=()=>{const sb=window.__movookClient,uid=window.__movookAccount?.user?.id;if(!sb||!uid)throw Error('Inicia sessão para usar as notas.');return{sb,uid};};
+ const guard=uid=>{if(window.__movookAccount?.user?.id!==uid)throw Error('A conta mudou. Reabre as Notas.');};
+ async function rows(table,sb,uid){const all=[];for(let p=0;;p+=1000){const r=await sb.from(table).select('*').eq('user_id',uid).order('created_at',{ascending:false}).range(p,p+999);if(r.error)throw r.error;guard(uid);all.push(...r.data);if(r.data.length<1000)return all;}}
+ function chips(note){return markers.filter(m=>(note.marker_ids||[]).includes(m.id)).map(m=>'<span class="note-tag" style="'+markerStyle(m)+'">'+esc(m.name)+'</span>').join('');}
+ function mapLink(note){const url=noteMapsLink(note);return url?'<a href="'+esc(url)+'" target="_blank" rel="noopener noreferrer">'+esc(note.place||'Local')+' — Abrir no Maps</a>':'';}
+ function choices(ids){return markers.map(m=>'<label class="note-marker-choice"><input type="checkbox" data-marker value="'+esc(m.id)+'" '+(ids.includes(m.id)?'checked':'')+'><span class="note-tag" style="'+markerStyle(m)+'">'+esc(m.name)+'</span></label>').join('')||'<p class="muted">Ainda não tens marcadores. Cria um em Marcadores.</p>';}
+ function filters(){for(const id of [...selected])if(!markers.some(m=>m.id===id))selected.delete(id);$('[data-marker-filters]').innerHTML=choices([...selected]);}
+ function refreshFormMarkers(){const box=dlg.querySelector('[data-note-markers]');if(!box)return;const ids=[...box.querySelectorAll('input:checked')].map(n=>n.value);box.innerHTML=choices(ids);}
+ async function load(){const ticket=++loading;try{const{sb,uid}=session();owner=uid;$('[data-message]').textContent='A carregar…';const [ns,ms]=await Promise.all([rows('user_notes',sb,uid),rows('user_note_markers',sb,uid)]);guard(uid);if(ticket!==loading)return;notes=ns;markers=ms.sort((a,b)=>a.name.localeCompare(b.name,'pt'));filters();render();$('[data-message]').textContent='';}catch(e){if(ticket===loading)$('[data-message]').textContent='Não foi possível carregar: '+e.message;}}
+ async function cover(node,n,uid){if(!n.image_path){node.textContent='Nota';return;}try{const{sb}=session();const r=await sb.storage.from('user-notes').createSignedUrl(n.image_path,3600);guard(uid);if(r.error||!r.data?.signedUrl)return;const img=document.createElement('img');img.src=r.data.signedUrl;img.alt='';img.loading='lazy';node.replaceChildren(img);}catch{}}
+ function render(){const list=notes.filter(n=>(!stateFilter||n.status===stateFilter)&&matchesMarkers(n,selected));const grid=$('#notesGrid');grid.replaceChildren();$('[data-empty]').hidden=!!list.length;for(const n of list){const card=document.createElement('article');card.className='note-card';card.innerHTML='<div class="note-cover"></div><div class="note-body"><button class="note-title" data-open="'+esc(n.id)+'">'+esc(n.title)+'</button><div class="note-tags">'+chips(n)+'</div>'+mapLink(n)+'<span class="muted">'+esc(n.note_date||'')+'</span><span class="note-status '+(n.status==='done'?'done':'')+'">'+(n.status==='done'?'Feito':'Por fazer')+'</span></div><div class="note-actions"><button class="btn" data-toggle="'+esc(n.id)+'">'+(n.status==='done'?'Por fazer':'Marcar feito')+'</button><button class="btn" data-edit="'+esc(n.id)+'">Editar</button><button class="btn" data-delete="'+esc(n.id)+'">Apagar</button></div>';grid.append(card);cover(card.querySelector('.note-cover'),n,owner);}}
+ function details(n){dlg.innerHTML='<div class="m"><h2>'+esc(n.title)+'</h2><div class="note-tags">'+chips(n)+'</div>'+mapLink(n)+'<p class="muted">'+esc(n.note_date||'')+'</p><div class="note-text">'+esc(n.body)+'</div><div class="row"><button class="btn" data-close>Fechar</button></div></div>';dlg.querySelector('[data-close]').onclick=()=>dlg.close();if(!dlg.open)dlg.showModal();}
+ function openForm(note=null){if(saving)return;const uid=session().uid;
+ dlg.innerHTML='<form class="m form"><h2>'+(note?'Editar nota':'Nova nota')+'</h2><label>Título<input name="title" maxlength="120" required value="'+esc(note?.title||'')+'"></label><label>Local ou morada<input name="place" maxlength="120" value="'+esc(note?.place||'')+'"></label><label>Link do Google Maps (opcional)<input name="maps_url" type="url" maxlength="2048" placeholder="https://maps.app.goo.gl/…" value="'+esc(note?.maps_url||'')+'"></label><p class="muted">Sem link, Abrir no Maps pesquisa o nome ou morada do local.</p><fieldset><legend>Marcadores (até 20)</legend><div data-note-markers>'+choices(note?.marker_ids||[])+'</div><button type="button" class="btn" data-manage>Gerir marcadores</button></fieldset><label>Data<input name="note_date" type="date" value="'+esc(note?.note_date||'')+'"></label><label>Estado<select name="status"><option value="todo">Por fazer</option><option value="done">Feito</option></select></label><label>Texto<textarea name="body" required>'+esc(note?.body||'')+'</textarea></label><label>Foto (opcional, até 5 MB)<input name="image" type="file" accept="image/*"></label><p data-status role="status"></p><div class="row"><button type="button" class="btn" data-cancel>Cancelar</button><button type="submit" class="btn fill">Guardar</button></div></form>';
+ const form=dlg.querySelector('form'),status=form.querySelector('[data-status]');form.elements.status.value=note?.status||'todo';form.querySelector('[data-cancel]').onclick=()=>{if(!saving)dlg.close();};form.querySelector('[data-manage]').onclick=()=>openManager();
+ form.onsubmit=async e=>{e.preventDefault();if(saving)return;let uploaded='';try{guard(uid);const maps_url=mapsURL(form.elements.maps_url.value.trim()),marker_ids=[...form.querySelectorAll('[data-note-markers] input:checked')].map(n=>n.value);if(marker_ids.length>20)throw Error('Seleciona no máximo 20 marcadores.');const file=form.elements.image.files[0];if(file&&(file.size>5*1024*1024||!file.type.startsWith('image/')))throw Error('Escolhe uma imagem até 5 MB.');const values={title:form.elements.title.value.trim(),place:form.elements.place.value.trim(),maps_url,marker_ids,note_date:form.elements.note_date.value||null,status:form.elements.status.value,body:form.elements.body.value.trim(),updated_at:new Date().toISOString()};if(!values.title||!values.body)throw Error('Preenche título e texto.');saving=true;status.textContent='A guardar…';form.querySelectorAll('button,input,select,textarea').forEach(n=>n.disabled=true);const{sb}=session();let image_path=note?.image_path||null;if(file){const ext=(file.name.split('.').pop()||'jpg').replace(/[^a-z0-9]/gi,'').slice(0,8)||'jpg';uploaded=uid+'/'+crypto.randomUUID()+'.'+ext;const up=await sb.storage.from('user-notes').upload(uploaded,file,{contentType:file.type,upsert:false});if(up.error)throw up.error;guard(uid);image_path=uploaded;}const r=note?await sb.from('user_notes').update({...values,image_path}).eq('id',note.id).eq('user_id',uid).select('id'):await sb.from('user_notes').insert({user_id:uid,...values,image_path}).select('id');if(r.error)throw r.error;if(!r.data?.length)throw Error('A nota já não está disponível.');uploaded='';guard(uid);dlg.close();await load();}catch(error){status.textContent='Erro: '+error.message;if(uploaded){try{const{sb}=session();await sb.storage.from('user-notes').remove([uploaded]);}catch{}}}finally{saving=false;form.querySelectorAll('button,input,select,textarea').forEach(n=>n.disabled=false);}};
+ if(!dlg.open)dlg.showModal();}
+ function openManager(edit=null){if(markerBusy)return;const uid=session().uid;
+ manager.innerHTML='<div class="m"><h2>Marcadores</h2><div>'+markers.map(m=>'<div class="note-actions"><span class="note-tag" style="'+markerStyle(m)+'">'+esc(m.name)+'</span><button class="btn" data-marker-edit="'+esc(m.id)+'">Editar</button></div>').join('')+'</div><form class="form"><h3>'+(edit?'Editar marcador':'Criar marcador')+'</h3><label>Nome<input name="name" required maxlength="60" value="'+esc(edit?.name||'')+'"></label><label>Cor<input name="color" type="color" value="'+validColor(edit?.color)+'"></label><p data-status role="status"></p><button class="btn fill" type="submit">'+(edit?'Guardar alterações':'Criar marcador')+'</button></form><div class="row"><button class="btn" data-new-marker>Novo marcador</button><button class="btn" data-close>Fechar</button></div></div>';
+ manager.querySelector('[data-close]').onclick=()=>{if(!markerBusy)manager.close();};manager.querySelector('[data-new-marker]').onclick=()=>openManager();manager.querySelectorAll('[data-marker-edit]').forEach(n=>n.onclick=()=>openManager(markers.find(m=>m.id===n.dataset.markerEdit)));
+ const form=manager.querySelector('form'),status=form.querySelector('[data-status]');form.onsubmit=async e=>{e.preventDefault();if(markerBusy)return;try{guard(uid);const name=form.elements.name.value.trim(),color=validColor(form.elements.color.value);if(!name)throw Error('Indica o nome do marcador.');markerBusy=true;manager.querySelectorAll('button,input').forEach(n=>n.disabled=true);status.textContent='A guardar…';const{sb}=session();const r=edit?await sb.from('user_note_markers').update({name,color}).eq('id',edit.id).eq('user_id',uid).select('id'):await sb.from('user_note_markers').insert({user_id:uid,name,color}).select('id');if(r.error)throw Error(r.error.code==='23505'?'Já existe um marcador com esse nome.':r.error.message);if(!r.data?.length)throw Error('O marcador já não está disponível.');guard(uid);markers=(await rows('user_note_markers',sb,uid)).sort((a,b)=>a.name.localeCompare(b.name,'pt'));filters();render();refreshFormMarkers();markerBusy=false;openManager();}catch(error){status.textContent='Erro: '+error.message;}finally{markerBusy=false;manager.querySelectorAll('button,input').forEach(n=>n.disabled=false);}};
+ if(!manager.open)manager.showModal();}
+ section.addEventListener('change',e=>{if(e.target.matches('[data-marker-filters] input')){e.target.checked?selected.add(e.target.value):selected.delete(e.target.value);render();}});
+ section.addEventListener('click',async e=>{try{const target=e.target.closest('button');if(!target)return;if(target.hasAttribute('data-new')){openForm();return;}if(target.hasAttribute('data-manage')){openManager();return;}if(target.hasAttribute('data-clear')){selected.clear();filters();render();return;}if(target.hasAttribute('data-state')){stateFilter=target.dataset.state;section.querySelectorAll('[data-state]').forEach(n=>n.classList.toggle('on',n===target));render();return;}const key=['open','edit','toggle','delete'].find(k=>target.hasAttribute('data-'+k));if(!key)return;const n=notes.find(n=>String(n.id)===target.dataset[key]);if(!n)return;if(key==='open'){details(n);return;}if(key==='edit'){openForm(n);return;}const{sb,uid}=session();guard(owner);if(key==='delete'){if(!confirm('Apagar a nota "'+n.title+'"?'))return;const r=await sb.from('user_notes').delete().eq('id',n.id).eq('user_id',uid);if(r.error)throw r.error;if(n.image_path)await sb.storage.from('user-notes').remove([n.image_path]);}else{const r=await sb.from('user_notes').update({status:n.status==='done'?'todo':'done',updated_at:new Date().toISOString()}).eq('id',n.id).eq('user_id',uid);if(r.error)throw r.error;}await load();}catch(error){$('[data-message]').textContent='Erro: '+error.message;}});
+ nav.addEventListener('click',e=>{const t=e.target.closest('button[data-view]');if(!t)return;if(t.dataset.view==='notes'){e.stopPropagation();nav.querySelectorAll('button[data-view]').forEach(n=>n.classList.toggle('on',n===t));for(const id of ['library','stats','shelves']){const pane=document.getElementById(id);if(pane)pane.hidden=true;}section.hidden=false;load();}else section.hidden=true;},true);
+ dlg.addEventListener('cancel',e=>{if(saving)e.preventDefault();});manager.addEventListener('cancel',e=>{if(markerBusy)e.preventDefault();});
+ window.addEventListener('movook:account',()=>{const uid=window.__movookAccount?.user?.id||'';if(uid===owner)return;loading++;owner=uid;notes=[];markers=[];selected.clear();stateFilter='';dlg.close();manager.close();filters();render();if(!section.hidden&&uid)load();});
 }
 if(typeof document!=='undefined')init();
