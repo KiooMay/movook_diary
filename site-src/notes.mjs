@@ -66,9 +66,7 @@ finally{busy=false;}
 }
 function show(view,target){
 nav.querySelectorAll('button[data-view]').forEach(b=>b.classList.toggle('on',b===target));
-const library=document.querySelector('#library'),stats=document.querySelector('#stats');
-if(library)library.hidden=view!=='library';
-if(stats)stats.hidden=view!=='stats';
+for(const id of ['library','stats','shelves']){const pane=document.getElementById(id);if(pane)pane.hidden=view!==id;}
 section.hidden=view!=='notes';
 if(view==='notes')load();
 }
@@ -85,8 +83,8 @@ if(del){const n=notes.find(x=>String(x.id)===del.dataset.delete);if(!confirm(`Ap
 });
 nav.addEventListener('click',e=>{
 const t=e.target.closest('button[data-view]');if(!t)return;
-e.stopPropagation();
-show(t.dataset.view,t);
+if(t.dataset.view==='notes'){e.stopPropagation();show('notes',t);}
+else section.hidden=true;
 },true);
 }
 if(typeof document!=='undefined')init();
