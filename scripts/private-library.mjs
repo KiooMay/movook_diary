@@ -84,9 +84,23 @@ export function preserveMetadataDialog(source){
   if(source.split(target).length!==2)throw Error('Metadata account listener missing or ambiguous');
   return source.replace(target,"window.addEventListener('movook:account',()=>{if(dlg.open&&(window.__movookAccount?.user?.id||'')!==owner)dlg.close();});");
 }
+export function editableTypeAndAlphabetical(source){
+  const start=source.indexOf('function openEdit(id) {');
+  const end=source.indexOf("\n$('#modal').addEventListener('click', (e) => { const id = e.target.dataset?.edit;",start);
+  if(start<0||end<start)throw Error('Edit form section missing');
+  let edit=source.slice(start,end);
+  const exact=(from,to)=>{if(edit.split(from).length!==2)throw Error('Edit form target missing or ambiguous: '+from);edit=edit.replace(from,to);};
+  exact('<label>Estado<select id="eStatus">','<label>Tipo<select id="eType" required><option value="movie">Filme</option><option value="series">Série</option><option value="anime">Anime</option><option value="book">Livro</option></select></label>\n    <label>Estado<select id="eStatus">');
+  exact("$('#eStatus').value = it.status || 'planned';","$('#eType').value = it.type || 'movie';\n  $('#eStatus').value = it.status || 'planned';");
+  exact("const patch = {\n      status:","const patch = {\n      type: $('#eType').value,\n      type_needs_review: false,\n      status:");
+  source=source.slice(0,start)+edit+source.slice(end);
+  if(!source.includes("sort: 'added'")||!source.includes("key === 'sort' ? 'added'"))throw Error('Default sort targets missing');
+  source=source.replaceAll("sort: 'added'","sort: 'title'").replaceAll("key === 'sort' ? 'added'","key === 'sort' ? 'title'");
+  return source;
+}
 if(process.argv[1]&&import.meta.url===pathToFileURL(process.argv[1]).href){
   const path='_site/index.html';
-  const next=privateLibrary(fs.readFileSync(path,'utf8'));
+  const next=editableTypeAndAlphabetical(privateLibrary(fs.readFileSync(path,'utf8')));
   for(const m of next.matchAll(/<script\b[^>]*>([\s\S]*?)<\/script>/gi))new Function(m[1]);
   const metadataPath='_site/media-metadata.mjs';
   const metadata=preserveMetadataDialog(fs.readFileSync(metadataPath,'utf8'));
