@@ -74,6 +74,25 @@ export function privateLibrary(source){
   section('async function load(first) {',"\n$('#refreshBtn').addEventListener('click',",accountLoad);
   section('async function loadPersonal() {','\n  let catalogPromise;',personalLoad);
   const marker="const el = $('#insights');";if(source.split(marker).length!==2)throw Error('Insights privacy target missing or ambiguous');source=source.replace(marker,marker+"\n  if (!window.__movookAccount?.user) { el.innerHTML = ''; return; }");
+  const authTarget="window.__movookAccount.items = []; window.__movookAccount.user = u; window.dispatchEvent(new Event('movook:account'));";
+  if(source.split(authTarget).length!==2)throw Error('Session identity target missing or ambiguous');
+  source=source.replace(authTarget,"const movookIdentityChanged = (window.__movookAccount.user?.id || null) !== (u?.id || null); window.__movookAccount.user = u; if (movookIdentityChanged) { window.__movookAccount.items = []; window.dispatchEvent(new Event('movook:account')); }");
   return source;
 }
-if(process.argv[1]&&import.meta.url===pathToFileURL(process.argv[1]).href){const path='_site/index.html';const next=privateLibrary(fs.readFileSync(path,'utf8'));for(const m of next.matchAll(/<script\b[^>]*>([\s\S]*?)<\/script>/gi))new Function(m[1]);fs.writeFileSync(path,next);}
+export function preserveMetadataDialog(source){
+  const target="window.addEventListener('movook:account',()=>{if(!busy&&dlg.open)dlg.close();});";
+  if(source.split(target).length!==2)throw Error('Metadata account listener missing or ambiguous');
+  return source.replace(target,"window.addEventListener('movook:account',()=>{if(dlg.open&&(window.__movookAccount?.user?.id||'')!==owner)dlg.close();});");
+}
+if(process.argv[1]&&import.meta.url===pathToFileURL(process.argv[1]).href){
+  const path='_site/index.html';
+  const next=privateLibrary(fs.readFileSync(path,'utf8'));
+  for(const m of next.matchAll(/<script\b[^>]*>([\s\S]*?)<\/script>/gi))new Function(m[1]);
+  const metadataPath='_site/media-metadata.mjs';
+  const metadata=preserveMetadataDialog(fs.readFileSync(metadataPath,'utf8'));
+  const {spawnSync}=await import('node:child_process');
+  const check=spawnSync(process.execPath,['--input-type=module','--check'],{input:metadata,encoding:'utf8'});
+  if(check.status!==0)throw Error(check.stderr||'Invalid metadata module');
+  fs.writeFileSync(path,next);
+  fs.writeFileSync(metadataPath,metadata);
+}
