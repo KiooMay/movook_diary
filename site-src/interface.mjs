@@ -36,11 +36,11 @@ function installCompletionSorting(){
   SORTS.yearNewest=['Ano — mais recentes',(a,b)=>(b.year||0)-(a.year||0)];
   SORTS.finishedNewest=['Visto/lido — mais recentes primeiro',(a,b)=>compare(a,b,false)];
   SORTS.finishedOldest=['Visto/lido — mais antigos primeiro',(a,b)=>compare(a,b,true)];
-  let selected='yearNewest';
+  let selected='added';
   const originalSetup=window.setupControls;
   window.setupControls=function(...args){state.sort=selected;const result=originalSetup.apply(this,args);const control=document.getElementById('sort');if(control)control.value=selected;return result;};
   document.getElementById('sort')?.addEventListener('change',event=>{if(Object.hasOwn(SORTS,event.target.value))selected=event.target.value;});
-  window.addEventListener('movook:account',()=>{selected='yearNewest';});
+  window.addEventListener('movook:account',()=>{selected='added';});
   window.setupControls();
   renderGrid();
 }
