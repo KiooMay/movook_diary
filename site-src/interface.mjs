@@ -1,6 +1,6 @@
 import './notes-photo.mjs';
 const heading=document.querySelector('header h1');
-if(heading)heading.textContent='MOVOOK';
+if(heading){heading.textContent='';const home=document.createElement('a');home.href='./';home.textContent='MOVOOK';home.style.cssText='color:inherit;text-decoration:none';home.setAttribute('aria-label','Ir para a página inicial do MOVOOK');heading.append(home);}
 const custom=document.querySelector('link[href="custom.css"]');
 if(custom)document.head.append(custom);
 if(!document.querySelector('link[data-movook-interface]')){const link=document.createElement('link');link.rel='stylesheet';link.href='interface.css';link.dataset.movookInterface='';if(custom)custom.before(link);else document.head.append(link);}
@@ -33,13 +33,14 @@ function installCompletionSorting(){
   if(typeof SORTS==='undefined'||typeof state==='undefined'||typeof window.setupControls!=='function'||typeof renderGrid!=='function')return;
   const completionDate=item=>{const value=String(item.date_finished||'').trim();if(!/^\d{4}-\d{2}-\d{2}$/.test(value))return '';const parsed=new Date(value+'T00:00:00Z');return Number.isFinite(parsed.getTime())&&parsed.toISOString().slice(0,10)===value?value:'';};
   const compare=(a,b,ascending)=>{const x=completionDate(a),y=completionDate(b);if(!x&&y)return 1;if(x&&!y)return -1;return (ascending?x.localeCompare(y):y.localeCompare(x))||String(a.title||'').localeCompare(String(b.title||''),'pt');};
+  SORTS.yearNewest=['Ano — mais recentes',(a,b)=>(b.year||0)-(a.year||0)];
   SORTS.finishedNewest=['Visto/lido — mais recentes primeiro',(a,b)=>compare(a,b,false)];
   SORTS.finishedOldest=['Visto/lido — mais antigos primeiro',(a,b)=>compare(a,b,true)];
-  let selected='finishedNewest';
+  let selected='yearNewest';
   const originalSetup=window.setupControls;
   window.setupControls=function(...args){state.sort=selected;const result=originalSetup.apply(this,args);const control=document.getElementById('sort');if(control)control.value=selected;return result;};
   document.getElementById('sort')?.addEventListener('change',event=>{if(Object.hasOwn(SORTS,event.target.value))selected=event.target.value;});
-  window.addEventListener('movook:account',()=>{selected='finishedNewest';});
+  window.addEventListener('movook:account',()=>{selected='yearNewest';});
   window.setupControls();
   renderGrid();
 }
