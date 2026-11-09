@@ -1,3 +1,4 @@
+import './notes-photo.mjs';
 const heading=document.querySelector('header h1');
 if(heading)heading.textContent='MOVOOK';
 const custom=document.querySelector('link[href="custom.css"]');
