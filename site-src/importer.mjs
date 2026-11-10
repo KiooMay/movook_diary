@@ -28,28 +28,34 @@ export function parseCSV(text,platform,name=''){
   }else throw Error('Origem CSV inválida');
   return {items:items.filter(i=>i.title.trim()),warnings};
 }
-function stremioArrays(data){
+function isLibraryItem(value){return !!value&&typeof value==='object'&&!Array.isArray(value)&&(value.id||value.imdb_id||value.imdbId||value.name||value.title||value.meta);}
+function stremioItems(data){
   const found=[];
   const visit=(value,depth=0)=>{
-    if(!value||depth>4)return;
-    if(Array.isArray(value)){
-      if(value.some(x=>x&&typeof x==='object'&&(x.id||x.imdb_id||x.imdbId||x.name||x.title||x.meta)))found.push(value);
-      value.forEach(x=>visit(x,depth+1));return;
-    }
-    if(typeof value==='object')Object.values(value).forEach(x=>visit(x,depth+1));
+    if(!value||depth>6)return;
+    if(Array.isArray(value)){value.forEach(x=>visit(x,depth+1));return;}
+    if(typeof value!=='object')return;
+    if(isLibraryItem(value)){found.push(value);return;}
+    Object.values(value).forEach(x=>visit(x,depth+1));
   };
   visit(data);
   const unique=[];const seen=new Set();
-  for(const array of found){const key=JSON.stringify(array.map(x=>x?.id||x?.imdb_id||x?.imdbId||''));if(!seen.has(key)){seen.add(key);unique.push(array);}}
+  for(const item of found){
+    const meta=item.meta&&typeof item.meta==='object'?item.meta:{};
+    const imdb=String(item.imdb_id||item.imdbId||meta.imdb_id||meta.imdbId||'').trim();
+    const id=String(item.id||meta.id||'').trim();
+    const title=String(item.name||item.title||meta.name||meta.title||'').trim();
+    const key=imdb||id||title;
+    if(!key||seen.has(key))continue;seen.add(key);unique.push(item);
+  }
   return unique;
 }
 export function parseStremio(text,name=''){
   let data;try{data=JSON.parse(text);}catch{throw Error('Ficheiro Stremio não é um JSON válido.');}
-  const arrays=stremioArrays(data);
-  if(!arrays.length)throw Error('Ficheiro Stremio sem biblioteca exportada.');
+  const records=stremioItems(data);
+  if(!records.length)throw Error('Ficheiro Stremio sem biblioteca exportada.');
   const items=[],warnings=[];const seen=new Set();
-  for(const array of arrays)for(const r of array){
-    if(!r||typeof r!=='object')continue;
+  for(const r of records){
     const meta=r.meta&&typeof r.meta==='object'?r.meta:{};
     const imdb=String(r.imdb_id||r.imdbId||meta.imdb_id||meta.imdbId||'').trim();
     const id=String(r.id||meta.id||'').trim();
