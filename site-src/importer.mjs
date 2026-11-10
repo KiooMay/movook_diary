@@ -28,22 +28,45 @@ export function parseCSV(text,platform,name=''){
   }else throw Error('Origem CSV inválida');
   return {items:items.filter(i=>i.title.trim()),warnings};
 }
+function stremioArrays(data){
+  const found=[];
+  const visit=(value,depth=0)=>{
+    if(!value||depth>4)return;
+    if(Array.isArray(value)){
+      if(value.some(x=>x&&typeof x==='object'&&(x.id||x.imdb_id||x.imdbId||x.name||x.title||x.meta)))found.push(value);
+      value.forEach(x=>visit(x,depth+1));return;
+    }
+    if(typeof value==='object')Object.values(value).forEach(x=>visit(x,depth+1));
+  };
+  visit(data);
+  const unique=[];const seen=new Set();
+  for(const array of found){const key=JSON.stringify(array.map(x=>x?.id||x?.imdb_id||x?.imdbId||''));if(!seen.has(key)){seen.add(key);unique.push(array);}}
+  return unique;
+}
 export function parseStremio(text,name=''){
   let data;try{data=JSON.parse(text);}catch{throw Error('Ficheiro Stremio não é um JSON válido.');}
-  const library=Array.isArray(data)?data:Array.isArray(data?.library)?data.library:Array.isArray(data?.items)?data.items:null;
-  if(!library)throw Error('Ficheiro Stremio sem biblioteca exportada.');
-  const items=[],warnings=[];
-  for(const r of library){
-    const title=String(r.name||r.title||'').trim();
-    if(!title){warnings.push('Item Stremio sem título ignorado.');continue;}
-    const rawType=String(r.type||'').toLowerCase();
+  const arrays=stremioArrays(data);
+  if(!arrays.length)throw Error('Ficheiro Stremio sem biblioteca exportada.');
+  const items=[],warnings=[];const seen=new Set();
+  for(const array of arrays)for(const r of array){
+    if(!r||typeof r!=='object')continue;
+    const meta=r.meta&&typeof r.meta==='object'?r.meta:{};
+    const imdb=String(r.imdb_id||r.imdbId||meta.imdb_id||meta.imdbId||'').trim();
+    const id=String(r.id||meta.id||'').trim();
+    const imdbId=/^tt\d+$/.test(imdb)?imdb:/^tt\d+$/.test(id)?id:'';
+    const title=String(r.name||r.title||meta.name||meta.title||'').trim();
+    if(!title&&!imdbId)continue;
+    const rawType=String(r.type||meta.type||'').toLowerCase();
     const type=rawType==='series'||rawType==='show'?'series':rawType==='anime'?'anime':'movie';
-    const i=base(type,title);
-    const yearText=String(r.releaseInfo||'').match(/\d{4}/)?.[0]||'';
-    i.year=num(r.year)||num(yearText);
-    const imdb=String(r.imdb_id||r.imdbId||'').trim();
-    if(/^tt\d+$/.test(imdb)){i.external_ids.imdb=imdb;i.source_url='https://www.imdb.com/title/'+imdb+'/';}
-    const watched=Number(r.lastWatched||r.state?.lastWatched||0);
+    const finalTitle=title||('Obra Stremio '+(imdbId||id));
+    const key=imdbId||type+':'+norm(finalTitle);
+    if(seen.has(key))continue;seen.add(key);
+    const i=base(type,finalTitle);
+    const yearText=String(r.releaseInfo||meta.releaseInfo||'').match(/\d{4}/)?.[0]||'';
+    i.year=num(r.year)||num(meta.year)||num(yearText);
+    if(imdbId){i.external_ids.imdb=imdbId;i.source_url='https://www.imdb.com/title/'+imdbId+'/';}
+    if(!title&&imdbId)warnings.push(finalTitle+': título não disponível no Stremio; revê após a importação.');
+    const watched=Number(r.lastWatched||r.state?.lastWatched||meta.lastWatched||meta.state?.lastWatched||0);
     i.status=watched>0?'done':'planned';
     i.date_added=watched?new Date(watched).toISOString().slice(0,10):'';
     i.date_finished=i.status==='done'?i.date_added:'';
