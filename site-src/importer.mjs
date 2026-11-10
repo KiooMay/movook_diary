@@ -1,7 +1,7 @@
 const LIMIT=20*1024*1024;
 export function csv(text){
   text=text.replace(/^\uFEFF/,''); const rows=[]; let row=[],s='',q=false;
-  for(let i=0;i<text.length;i++){const c=text[i]; if(c==='"'){if(q&&text[i+1]==='"'){s+='"';i++;}else if(q||s==='')q=!q;else throw Error('Aspas CSV inválidas');}else if(c===','&&!q){row.push(s);s='';}else if((c==='\n'||c==='\r')&&!q){if(c==='\r'&&text[i+1]==='\n')i++;row.push(s);if(row.some(Boolean))rows.push(row);row=[];s='';}else s+=c;}
+  for(let i=0;i<text.length;i++){const c=text[i]; if(c==='"'){if(q&&text[i+1]==='"'){s+='"';i++;}else q=!q;}else if(c===','&&!q){row.push(s);s='';}else if((c==='\n'||c==='\r')&&!q){if(c==='\r'&&text[i+1]==='\n')i++;row.push(s);if(row.some(x=>x.trim()!==''))rows.push(row);row=[];s='';}else s+=c;}
   if(q)throw Error('CSV com aspas por fechar'); if(s||row.length){row.push(s);rows.push(row);} if(!rows.length)return [];
   const head=rows.shift().map(x=>x.trim()); if(new Set(head).size!==head.length)throw Error('Colunas CSV repetidas');
   return rows.map((r,i)=>{if(r.length!==head.length)throw Error('Número de colunas inválido na linha '+(i+2));return Object.fromEntries(head.map((h,j)=>[h,r[j]]));});
@@ -13,6 +13,12 @@ const score=(s,max)=>{const n=num(s);return n!=null&&n>0&&n<=max?n*10/max:null;}
 export function date(s){const t=String(s||'').replaceAll('/','-');if(!/^\d{4}-\d{2}-\d{2}$/.test(t)||t.startsWith('0000'))return '';const d=new Date(t+'T00:00:00Z');return !isNaN(d)&&d.toISOString().slice(0,10)===t?t:'';}
 const plain=s=>String(s||'').replace(/<br\s*\/?\s*>/gi,'\n').replace(/<[^>]*>/g,'');
 function base(type,title){return {type,title,original_title:title,year:null,creators:[],genres:[],tags:[],rating:null,status:'planned',date_added:'',date_finished:'',review:'',synopsis:'',cover:'',length:{},external_ids:{},import_history:[],metadata_pending:true};}
+function looksJson(t){const s=t.trim();return s.startsWith('{')||s.startsWith('[');}
+function tolerantJson(text){
+  try{return JSON.parse(text);}catch(e){}
+  const cleaned=text.replace(/,\s*([\]}])/g,'$1');
+  try{return JSON.parse(cleaned);}catch(e){throw Error('Ficheiro Trakt não é JSON válido nem CSV.');}
+}
 export function parseCSV(text,platform,name=''){
   const rows=csv(text),items=[],warnings=[]; if(!rows.length)return {items,warnings};const h=rows[0];
   if(platform==='imdb'){
@@ -57,10 +63,10 @@ export function parseTrakt(text,name=''){
   const file=name.split('/').pop().toLowerCase();
   const watchlist=/watchlist/.test(file),collection=/collection/.test(file),finished=/watched|history|rating|diary/.test(file);
   let records=[];
-  try{
-    const data=JSON.parse(text);
+  if(looksJson(text)){
+    const data=tolerantJson(text);
     records=traktRecords(data);
-  }catch{
+  }else{
     const lines=text.split(/\r?\n/).map(x=>x.trim()).filter(Boolean);
     for(const line of lines){try{records.push(...traktRecords(JSON.parse(line)));}catch{}}
   }
