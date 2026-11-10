@@ -29,6 +29,10 @@ if(nav){
   const observer=new MutationObserver(records=>{if(records.some(r=>(r.target instanceof Element&&(r.target===nav||r.target.matches('main')||r.target.closest('dialog')))||[...r.addedNodes].some(n=>n instanceof Element&&n.matches('dialog,footer'))))refresh();});
   observer.observe(document.body,{childList:true,subtree:true});refresh();
 }
+function installAddDefault(){
+  const apply=()=>{const form=document.getElementById('addForm');if(!form||form.dataset.defaultDone)return;const status=form.querySelector('#fStatus');if(status){status.value='done';form.dataset.defaultDone='1';}};
+  new MutationObserver(apply).observe(document.body,{childList:true,subtree:true});apply();
+}
 function installCompletionSorting(){
   if(typeof SORTS==='undefined'||typeof state==='undefined'||typeof window.setupControls!=='function'||typeof renderGrid!=='function')return;
   const completionDate=item=>{const value=String(item.date_finished||'').trim();if(!/^\d{4}-\d{2}-\d{2}$/.test(value))return '';const parsed=new Date(value+'T00:00:00Z');return Number.isFinite(parsed.getTime())&&parsed.toISOString().slice(0,10)===value?value:'';};
@@ -44,4 +48,5 @@ function installCompletionSorting(){
   window.setupControls();
   renderGrid();
 }
+installAddDefault();
 installCompletionSorting();
