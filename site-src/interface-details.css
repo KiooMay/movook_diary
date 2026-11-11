@@ -1,0 +1,25 @@
+:root{--detail-space-1:4px;--detail-space-2:8px;--detail-space-3:12px;--detail-space-4:16px;--detail-space-5:24px;--detail-radius-control:10px;--detail-radius-cover:8px;--detail-radius-panel:12px;--detail-shadow:0 12px 32px rgba(0,0,0,.18)}
+body{font-family:system-ui,-apple-system,'Segoe UI',Roboto,sans-serif}
+body .btn,body .close,body .form input,body .form select,body .form textarea,body .controls input,body .controls select{border-radius:var(--detail-radius-control)}
+body .form input,body .form select,body .form textarea,body .controls input,body .controls select{border-color:var(--line)}
+body .btn,body .close{font-weight:550}
+body .form label{font-size:.875rem;line-height:1.45}
+body dialog{border-radius:var(--detail-radius-panel);border-color:var(--line);box-shadow:var(--detail-shadow)}
+body dialog .m{padding:var(--detail-space-4);gap:var(--detail-space-4)}
+body dialog h2{font-size:1.25rem;line-height:1.3;font-weight:600;letter-spacing:-.025em}
+body dialog h3{font-size:.875rem;line-height:1.4;font-weight:600}
+body .row,body .ui-dialog-actions{gap:var(--detail-space-2)}
+body .ui-dialog-actions{padding-top:var(--detail-space-4);margin-top:var(--detail-space-1)}
+body .ui-more-panel,body .view-menu-list{border-radius:var(--detail-radius-panel);border-color:var(--line);padding:var(--detail-space-2);gap:var(--detail-space-1);box-shadow:var(--detail-shadow)}
+body .ui-more-panel button,body .ui-more-panel a,body .view-menu-list>button{border-radius:var(--detail-radius-control)}
+body .stat,body .note-card{box-shadow:none}
+body .card,body .card:hover{box-shadow:none;transform:none}
+#library #grid .card{border-radius:var(--detail-radius-cover)}
+#library #types{gap:var(--detail-space-2)}
+#notes .note-actions{gap:var(--detail-space-2)}
+body button,body a.btn,body summary,body input,body select,body textarea{transition:background-color .12s ease,border-color .12s ease,color .12s ease}
+body :where(button,a,input,select,textarea,summary):focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+body .detail-action-icon{width:16px;height:16px;display:inline-block;vertical-align:-3px;margin-right:6px;stroke:currentColor;stroke-width:1.75;fill:none;stroke-linecap:round;stroke-linejoin:round;pointer-events:none}
+header nav .nav-tools>#refreshBtn{font-size:0;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%236b6b76' stroke-width='1.75' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M20 7v5h-5M4 17v-5h5M6.1 7a7 7 0 0 1 11.6-1L20 9M4 15l2.3 3A7 7 0 0 0 18 17'/%3E%3C/svg%3E");background-size:18px 18px;background-position:center;background-repeat:no-repeat}
+@media(prefers-color-scheme:dark){header nav .nav-tools>#refreshBtn{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23b8b8c3' stroke-width='1.75' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M20 7v5h-5M4 17v-5h5M6.1 7a7 7 0 0 1 11.6-1L20 9M4 15l2.3 3A7 7 0 0 0 18 17'/%3E%3C/svg%3E")}}
+@media(prefers-reduced-motion:reduce){body button,body a.btn,body summary,body input,body select,body textarea,body .card{transition:none}}
