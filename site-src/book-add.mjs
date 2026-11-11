@@ -45,13 +45,14 @@ function openPreview({title,author,status,rating,review}){
   })();
 }
 function install(){
-  const form=document.getElementById('addForm');if(!form)return;
-  form.addEventListener('submit',event=>{
-    if(form.querySelector('#fType')?.value!=='book')return;
+  const host=document.getElementById('formDlg');if(!host)return;
+  host.addEventListener('submit',event=>{
+    const form=event.target;
+    if(form?.id!=='addForm'||form.querySelector('#fType')?.value!=='book')return;
     const titles=String(form.querySelector('#fTitles')?.value||'').split(/\r?\n/).map(s=>s.trim()).filter(Boolean);
     if(titles.length!==1)return;
     event.preventDefault();event.stopImmediatePropagation();
     openPreview({title:titles[0],author:'',status:form.querySelector('#fStatus')?.value||'done',rating:form.querySelector('#fRating')?.value||'',review:form.querySelector('#fReview')?.value||''});
   },true);
 }
-if(typeof document!=='undefined'){if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',install,{once:true});else install();}
+if(typeof document!=='undefined')install();
