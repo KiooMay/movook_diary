@@ -23,13 +23,6 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
-      - name: Recover intact HTML and service worker from Git history
-        run: |
-          set -eu
-          original=f8cd65754337829065ac45d58252764ad3a67a56
-          git fetch --no-tags --depth=1 origin "$original"
-          git show "$original:site-src/index.html" > site-src/index.html
-          git show "$original:site-src/sw.js" > site-src/sw.js
       - uses: actions/setup-node@v4
         with:
           node-version: 20
@@ -86,7 +79,7 @@ jobs:
           fs.writeFileSync(metadataPath,metadata);
           const {needsCompletion}=await import('./_site/media-metadata.mjs');
           if(needsCompletion({cover:'https://example.com/cover.jpg',synopsis:'Texto'}))throw Error('Complete card must not be listed');
-          for(const item of [{},{cover:'https://example.com/cover.jpg'},{synopsis:'Texto'},{cover:' ',synopsis:'Texto'}])if(!needsCompletion(item))throw Error('Missing cover/synopsis must be listed');
+          for(const item of [{},{cover:'https://example.com/cover.jpg'},{synopsis:'Texto'},{cover: ' ',synopsis:'Texto'}])if(!needsCompletion(item))throw Error('Missing cover/synopsis must be listed');
           NODE
       - run: node --check _site/media-metadata.mjs
       - run: node scripts/connect-books-proxy.mjs
