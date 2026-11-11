@@ -1,10 +1,7 @@
-#library #grid .card{background:transparent;border:0;border-radius:0;box-shadow:none;color:var(--text)}
-#library #grid .card>.cover{width:100%;border-radius:8px;overflow:hidden}
-#library #grid .card>.info{background:transparent;padding:.5rem .1rem .65rem;width:100%}
+#library #grid .card{background:var(--card);border:1px solid var(--line);border-radius:8px;box-shadow:none;color:var(--text)}
+#library #grid .card>.cover{width:100%;border-radius:0;overflow:hidden}
 #library #grid .card>.info small{display:block;color:var(--muted);margin-top:.2rem}
 #library #grid .badge{background:rgba(20,20,24,.82);color:#fff;border:0;box-shadow:none;border-radius:6px;font-variant-numeric:tabular-nums}
-#library #grid .badge b{color:inherit}
+#library #grid .badge b{color:var(--star)}
 #library #grid .favstar[data-light-favorite="false"]{display:none}
 #library #grid .favstar[data-light-favorite="true"]{background:rgba(20,20,24,.82);color:#fff;border:0;box-shadow:none;border-radius:6px}
-#modal [data-card-favorite]{justify-self:start;background:transparent;border:1px solid var(--line);color:var(--text);border-radius:10px;padding:.45rem .7rem;font:inherit;cursor:pointer}
-#modal [data-card-favorite]:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
