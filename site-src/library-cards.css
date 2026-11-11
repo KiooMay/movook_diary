@@ -5,3 +5,4 @@
 #library #grid .badge b{color:var(--star)}
 #library #grid .favstar[data-light-favorite="false"]{display:none}
 #library #grid .favstar[data-light-favorite="true"]{background:rgba(20,20,24,.82);color:#fff;border:0;box-shadow:none;border-radius:6px}
+@media(min-width:701px) and (width < 1100px){#library #grid{grid-template-columns:repeat(6,minmax(0,1fr))}}
