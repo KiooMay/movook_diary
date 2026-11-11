@@ -1,7 +1,7 @@
 function init(){
   const toolbar=document.querySelector('#library .library-filter-toolbar'),grid=document.getElementById('grid'),tabs=document.getElementById('types');
   if(!toolbar||!grid||!tabs)return;
-  const style=document.createElement('style');style.textContent='#library-result-count{display:none}#selected-category-count{margin:0;align-self:center;color:var(--muted);font-size:.75rem;font-weight:400;line-height:1.4;font-variant-numeric:tabular-nums}';document.head.append(style);
+  const style=document.createElement('style');style.textContent='#library-result-count{display:none}#selected-category-count{margin:0;align-self:center;color:var(--muted);font-size:.60rem;font-weight:400;line-height:1.4;font-variant-numeric:tabular-nums}';document.head.append(style);
   const counter=document.createElement('p');counter.id='selected-category-count';counter.setAttribute('role','status');
   const details=toolbar.querySelector('.library-filter-details');if(details)details.after(counter);else toolbar.prepend(counter);
   const labels={all:['item','itens'],movie:['filme','filmes'],series:['série','séries'],anime:['anime','animes'],book:['livro','livros']};
