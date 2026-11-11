@@ -12,12 +12,11 @@ function variants(title){
 export async function searchAnimeFallback(payload,call){
   if(payload.type!=='anime'||payload.action==='details')return call(payload);
   const title=String(payload.title||'').trim();
-  const errors=[];let primary=null;
+  const errors=[];
   for(const candidateTitle of variants(title)){
     try{
       const result=await call({...payload,title:candidateTitle,year:candidateTitle===title?payload.year:undefined});
       if(result?.candidates?.length)return result;
-      primary=result;
     }catch(error){
       if(/sessão|conta mudou|inicia sessão/i.test(error.message||''))throw error;
       errors.push(error.message||'Falha Jikan/MyAnimeList');
@@ -40,6 +39,5 @@ export async function searchAnimeFallback(payload,call){
       fallbackErrors.push(error.message||'Falha TMDB');
     }
   }
-  if(!candidates.length&&(errors.length||fallbackErrors.length))throw Error('Pesquisa MyAnimeList: '+(errors.join(' · ')||'sem resultados')+(fallbackErrors.length?' · TMDB: '+fallbackErrors.join(' · '):''));
   return {candidates,state:candidates.length?'candidates':'not_found',matched_by:candidates.length?'anime_tmdb_fallback':'anime_primary',warnings:[...errors,...fallbackErrors]};
 }
