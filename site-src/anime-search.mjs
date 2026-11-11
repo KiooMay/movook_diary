@@ -25,9 +25,10 @@ function order(candidates,title,year){
 export async function searchAnimeFallback(payload,call){
   if(payload.type!=='anime')return call(payload);
   if(payload.action==='details'&&payload.id){
+    try{const result=await call(payload);if(result?.candidates?.length)return result;}catch(error){if(/sessão|conta mudou|inicia sessão/i.test(error.message||''))throw error;}
     try{const data=await anilist('query($id:Int){Media(id:$id,type:ANIME){id idMal title{romaji english native}description(asHtml:false)coverImage{large medium}genres studios{nodes{name}}episodes siteUrl startDate{year}}}',{id:Number(payload.id)});const candidate=mapAniList(data?.Media);if(candidate)return {candidates:[candidate],state:'candidates',matched_by:'anime_anilist'};}catch(error){console.warn(error);}
     try{const data=await jikan('/anime/'+encodeURIComponent(payload.id));const candidate=mapAnime(data?.data);if(candidate)return {candidates:[candidate],state:'candidates',matched_by:'anime_jikan'};}catch(error){console.warn(error);}
-    return call(payload);
+    return {candidates:[],state:'not_found',matched_by:'anime_primary',warnings:[]};
   }
   const title=String(payload.title||'').trim();if(!title)return call(payload);
   let primaryError=null;
