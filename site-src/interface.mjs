@@ -48,5 +48,29 @@ function installCompletionSorting(){
   window.setupControls();
   renderGrid();
 }
+function installDeepSearch(){
+  try{
+    if(typeof filtered!=='function'||typeof state==='undefined'||typeof items==='undefined'||typeof SORTS==='undefined'||typeof renderGrid!=='function'||window.__movookDeepSearch)return;
+    window.__movookDeepSearch=true;
+    const norm=(s)=>String(s??'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
+    const fuzzy=(hay,needle)=>{let i=0;for(const c of hay){if(c===needle[i])i++;if(i===needle.length)return true;}return false;};
+    window.filtered=function(){
+      const q=norm(state.q.trim());
+      return items
+        .filter((i)=>state.type==='all'||i.type===state.type)
+        .filter((i)=>!state.status||i.status===state.status)
+        .filter((i)=>!state.genre||i.genres.includes(state.genre))
+        .filter((i)=>!state.tag||i.tags.includes(state.tag))
+        .filter((i)=>{
+          if(!q)return true;
+          const hay=norm([i.title,i.original_title,...(i.alternate_titles||[]),...i.creators,...i.tags,i.synopsis].filter(Boolean).join(' '));
+          return hay.includes(q)||fuzzy(hay,q);
+        })
+        .sort(SORTS[state.sort][1]);
+    };
+    renderGrid();
+  }catch(e){}
+}
 installAddDefault();
 installCompletionSorting();
+installDeepSearch();
