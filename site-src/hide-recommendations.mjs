@@ -1,6 +1,7 @@
 import './library-filters.mjs';
 import './library-cards.mjs';
 import './interface-details.mjs';
+import './library-extras.mjs';
 function clean(){
   const el=document.querySelector('#insights');
   if(!el)return;
