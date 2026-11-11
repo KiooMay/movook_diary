@@ -21,7 +21,14 @@ function init(){
   document.querySelector('#library .controls')?.addEventListener('change',results);
   const toast=document.getElementById('toast');if(toast)new MutationObserver(()=>{if(/Erro ao carregar a biblioteca/i.test(toast.textContent))error(toast.textContent);}).observe(toast,{childList:true,subtree:true});
   function wrapRefresh(){const account=window.__movookAccount;if(!account?.refresh||account.refresh.movookFeedback)return;const original=account.refresh;const wrapped=async function(...args){const identity=owner();let timer;try{const result=await Promise.race([Promise.resolve().then(()=>original.apply(this,args)),new Promise((_,reject)=>{timer=setTimeout(()=>reject(Error('O carregamento demorou demasiado. A ligação pode ainda estar a terminar. Podes tentar novamente.')),20000);})]);if(owner()===identity)recovery.hidden=true;return result;}catch(cause){if(owner()===identity)error(cause.message||'Não foi possível carregar a biblioteca.');throw cause;}finally{clearTimeout(timer);results();}};wrapped.movookFeedback=true;account.refresh=wrapped;}
-  retry.onclick=async()=>{wrapRefresh();if(!owner())return;retry.disabled=true;try{await window.__movookAccount.refresh();}catch{}finally{retry.disabled=false;}};
+  retry.onclick=async()=>{
+    if(!owner())return;
+    const account=window.__movookAccount;
+    if(typeof account?.refresh!=='function'){location.reload();return;}
+    wrapRefresh();
+    retry.disabled=true;
+    try{await account.refresh();if(!recovery.hidden&&!grid.querySelector('.card[data-id]'))location.reload();}catch{if(!grid.querySelector('.card[data-id]'))location.reload();}finally{retry.disabled=false;}
+  };
   window.addEventListener('movook:account',()=>{recovery.hidden=true;wrapRefresh();results();});
   window.addEventListener('movook:library',results);wrapRefresh();results();
   if('serviceWorker' in navigator){let controlled=!!navigator.serviceWorker.controller;let dismissed=false;function offer(){if(dismissed||document.getElementById('movook-update'))return;const banner=document.createElement('div');banner.id='movook-update';banner.setAttribute('role','status');const text=document.createElement('p');text.textContent='Nova versão disponível.';const update=document.createElement('button');update.type='button';update.className='btn';update.textContent='Atualizar';const later=document.createElement('button');later.type='button';later.className='btn';later.textContent='Mais tarde';banner.append(text,update,later);document.body.append(banner);update.onclick=()=>{if(document.querySelector('dialog[open]')){text.textContent='Guarda as alterações e fecha as janelas antes de atualizar.';return;}location.reload();};later.onclick=()=>{dismissed=true;banner.remove();};}
