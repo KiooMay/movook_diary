@@ -5,7 +5,7 @@ function mapAnime(a){
   const id=String(a.mal_id||'');if(!id)return null;
   return {provider:'jikan',id,type:'anime',title:a.title_english||a.title||'',original_title:a.title||'',year:a.year||a.aired?.from?.slice(0,4)||'',cover:a.images?.jpg?.large_image_url||a.images?.jpg?.image_url||'',synopsis:a.synopsis||'',creators:(a.studios||[]).map(x=>x.name),genres:(a.genres||[]).map(x=>x.name),length:{episodes:a.episodes||0},external_ids:{myanimelist:id},source_url:a.url||'',details_needed:false};
 }
-async function jikan(path){const r=await fetch(JIKAN+path,{headers:{Accept:'application/json'}});if(r.status===429)throw Error('MyAnimeList está a limitar pedidos; tenta novamente dentro de um minuto.');if(!r.ok)throw Error('Jikan HTTP '+r.status);return r.json();}
+async function jikan(path){const r=await fetch(JIKAN+path,{headers:{Accept:'application/json'},signal:AbortSignal.timeout(4000)});if(r.status===429)throw Error('MyAnimeList está a limitar pedidos; tenta novamente dentro de um minuto.');if(!r.ok)throw Error('Jikan HTTP '+r.status);return r.json();}
 export async function searchAnimeFallback(payload,call){
   if(payload.type!=='anime')return call(payload);
   if(payload.action==='details'&&payload.id){
