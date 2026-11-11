@@ -1,9 +1,10 @@
+@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@800&display=swap');
 /* Base visual do MOVOOK. Personaliza em custom.css, carregado depois deste ficheiro. */
 :root{--ui-radius:18px;--ui-gap:1rem;--ui-shadow:0 14px 40px rgba(0,0,0,.08)}
 [hidden]{display:none!important}
 body{line-height:1.55;background:var(--bg);-webkit-font-smoothing:antialiased}
 header{padding:1.5rem 1rem 1.2rem;gap:1rem;align-items:center}
-h1{font-size:1.35rem;letter-spacing:-.035em;white-space:nowrap}
+h1{font-family:'Roboto',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;font-weight:800;font-size:1.55rem;letter-spacing:-.04em;white-space:nowrap}
 header nav{gap:.4rem;align-items:center;position:relative}
 header nav>button[data-view],header nav>#addBtn,header nav>#addLink,.ui-more>summary{min-height:42px;padding:.5rem .9rem;border-radius:12px;font-weight:550;font-size:.9rem}
 header nav>button[data-view]{border-color:transparent;color:var(--muted)}
