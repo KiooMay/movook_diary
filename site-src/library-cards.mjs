@@ -1,3 +1,4 @@
+import './music.mjs';
 function favorites(){
   const owner=window.__movookAccount?.user?.id||'guest';
   try{let values=JSON.parse(localStorage.getItem('mobook.favorites:'+owner));if(typeof values==='string')values=JSON.parse(values);return new Set(Array.isArray(values)?values.map(String):[]);}catch{return new Set();}
