@@ -10,12 +10,19 @@ header nav{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);a
 .nav-tools>.ui-more{order:3}
 .nav-tools>.ui-more>summary{white-space:nowrap;min-height:38px;padding:.45rem .6rem;font-size:.82rem;border-radius:10px}
 #accountBtn{display:none!important}
-.nav-pages>#avatarBtn{flex:0 0 auto;width:32px;height:32px;min-width:32px;padding:0;margin-right:0;border:1px solid var(--line);border-radius:50%;display:grid;place-items:center;overflow:hidden;background:color-mix(in srgb,var(--accent) 15%,var(--card));color:var(--accent);font-weight:650;cursor:pointer}
 .nav-tools:has(#entryBtn:not([hidden]))>#addBtn,.nav-tools:has(#entryBtn:not([hidden]))>#addLink{display:none}
 #authFlowDlg{max-width:480px}
 #authFlowDlg h2{margin:0}
 #authFlowDlg [data-auth-status]:empty{display:none}
 .entry-switch{text-align:center;font-size:.9rem;margin:.2rem 0}
 .entry-link{display:inline;padding:.15rem;border:0;background:none;color:var(--accent);font:inherit;text-decoration:underline;cursor:pointer}
+.view-menu{position:relative;flex:0 0 auto}
+.view-menu>summary{list-style:none;cursor:pointer;white-space:nowrap;min-width:max-content;min-height:38px;padding:.45rem .6rem;border:1px solid transparent;border-radius:10px;color:var(--muted);font-size:.82rem;font-weight:550;display:flex;align-items:center;gap:.25rem}
+.view-menu>summary::-webkit-details-marker{display:none}
+.view-menu[open]>summary{background:var(--accent);color:#fff}
+.view-menu-list{position:absolute;top:calc(100% + .35rem);left:0;min-width:180px;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:.35rem;display:grid;gap:.15rem;box-shadow:0 12px 30px rgba(0,0,0,.18);z-index:60}
+.view-menu-list>button[data-view]{width:100%;justify-content:flex-start;text-align:left;white-space:nowrap;padding:.5rem .6rem;font-size:.82rem;border:0;background:none;color:var(--text);border-radius:8px;cursor:pointer}
+.view-menu-list>button[data-view]:hover{background:color-mix(in srgb,var(--accent) 12%,transparent)}
+.view-menu-list>button[data-view].on{background:var(--accent);color:#fff}
 @media(max-width:900px){header nav{display:grid;grid-template-columns:minmax(0,1fr);width:100%;gap:.5rem}.nav-tools{grid-column:auto;order:1;justify-self:stretch;width:100%;gap:.25rem}.nav-pages{grid-column:auto;order:2;justify-self:stretch;width:100%;gap:.15rem}.nav-pages>button[data-view]{flex:1 0 auto;min-width:max-content;white-space:nowrap;padding:.5rem .35rem;font-size:.78rem}.nav-tools>#entryBtn{font-size:.8rem}.nav-tools>.ui-more>summary{font-size:.8rem;padding:.5rem .55rem}}
 @media(max-width:700px){#authFlowDlg{max-width:calc(100vw - 1rem)}}
