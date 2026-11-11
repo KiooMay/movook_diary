@@ -17,13 +17,5 @@ header nav{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);a
 #authFlowDlg [data-auth-status]:empty{display:none}
 .entry-switch{text-align:center;font-size:.9rem;margin:.2rem 0}
 .entry-link{display:inline;padding:.15rem;border:0;background:none;color:var(--accent);font:inherit;text-decoration:underline;cursor:pointer}
-.view-switch{position:relative;flex:0 0 auto}
-.view-switch>summary{list-style:none;cursor:pointer;white-space:nowrap;min-height:38px;padding:.45rem .6rem;border:1px solid var(--line);border-radius:10px;font-size:.82rem;color:var(--muted);display:flex;align-items:center;gap:.3rem;background:var(--card)}
-.view-switch>summary::-webkit-details-marker{display:none}
-.view-switch[open]>summary{background:var(--accent);color:#fff;border-color:var(--accent)}
-.view-switch-panel{position:absolute;top:calc(100% + .3rem);left:50%;transform:translateX(-50%);background:var(--card);border:1px solid var(--line);border-radius:12px;padding:.3rem;display:grid;gap:.15rem;min-width:170px;z-index:60;box-shadow:0 8px 24px rgba(0,0,0,.18)}
-.view-switch-panel>button[data-view]{width:100%;text-align:left;border:0;background:none;color:var(--text);padding:.45rem .6rem;border-radius:8px;cursor:pointer;font-size:.85rem;white-space:nowrap}
-.view-switch-panel>button[data-view]:hover{background:color-mix(in srgb,var(--accent) 12%,var(--card))}
-.view-switch-panel>button[data-view].on{background:var(--accent);color:#fff}
-@media(max-width:900px){header nav{display:grid;grid-template-columns:minmax(0,1fr);width:100%;gap:.5rem}.nav-tools{grid-column:auto;order:1;justify-self:stretch;width:100%;gap:.25rem}.nav-pages{grid-column:auto;order:2;justify-self:stretch;width:100%;gap:.15rem}.nav-pages>button[data-view]{flex:1 0 auto;min-width:max-content;white-space:nowrap;padding:.5rem .35rem;font-size:.78rem}.nav-tools>#entryBtn{font-size:.8rem}.nav-tools>.ui-more>summary{font-size:.8rem;padding:.5rem .55rem}.view-switch{width:100%}.view-switch>summary{width:100%;justify-content:center}.view-switch-panel{left:0;right:0;transform:none;width:100%}}
+@media(max-width:900px){header nav{display:grid;grid-template-columns:minmax(0,1fr);width:100%;gap:.5rem}.nav-tools{grid-column:auto;order:1;justify-self:stretch;width:100%;gap:.25rem}.nav-pages{grid-column:auto;order:2;justify-self:stretch;width:100%;gap:.15rem}.nav-pages>button[data-view]{flex:1 0 auto;min-width:max-content;white-space:nowrap;padding:.5rem .35rem;font-size:.78rem}.nav-tools>#entryBtn{font-size:.8rem}.nav-tools>.ui-more>summary{font-size:.8rem;padding:.5rem .55rem}}
 @media(max-width:700px){#authFlowDlg{max-width:calc(100vw - 1rem)}}
