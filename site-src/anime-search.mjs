@@ -14,6 +14,7 @@ export async function searchAnimeFallback(payload,call){
   }
   const title=String(payload.title||'').trim();if(!title)return call(payload);
   const query=title.replace(/[\u2018\u2019'’]/g,"'").replace(/[^\p{L}\p{N}\s']/gu,' ').replace(/\s+/g,' ').trim();
+  let primaryError=null;
   try{
     const data=await jikan('/anime?q='+encodeURIComponent(query)+'&limit=8&sfw=true');
     const candidates=(data?.data||[]).map(mapAnime).filter(Boolean);
@@ -24,7 +25,14 @@ export async function searchAnimeFallback(payload,call){
       if(payload.year){const year=String(payload.year);const matching=ordered.filter(c=>String(c.year)===year);if(matching.length)return {candidates:matching,state:'candidates',matched_by:'anime_jikan'};}
       return {candidates:ordered,state:'candidates',matched_by:'anime_jikan'};
     }
-  }catch(error){console.warn(error);}
+  }catch(error){primaryError=error;}
+  try{
+    const result=await call(payload);
+    if(result?.candidates?.length)return result;
+  }catch(error){
+    if(/sessão|conta mudou|inicia sessão/i.test(error.message||''))throw error;
+    primaryError=primaryError||error;
+  }
   const candidates=[],fallbackErrors=[],seen=new Set();
   for(const type of ['series','movie']){
     try{
@@ -37,7 +45,11 @@ export async function searchAnimeFallback(payload,call){
         const key=type+':'+detail.id;if(seen.has(key))continue;seen.add(key);
         candidates.push({...detail,type:'anime',details_needed:false,anime_fallback:true,external_ids:{...(detail.external_ids||{}),tmdb:String(detail.id),tmdb_media_type:type}});
       }
-    }catch(error){fallbackErrors.push(error.message||'Falha TMDB');}
+    }catch(error){
+      if(/sessão|conta mudou|inicia sessão/i.test(error.message||''))throw error;
+      fallbackErrors.push(error.message||'Falha TMDB');
+    }
   }
-  return {candidates,state:candidates.length?'candidates':'not_found',matched_by:candidates.length?'anime_tmdb_fallback':'anime_primary',warnings:fallbackErrors};
+  const warnings=[primaryError?.message,...fallbackErrors].filter(Boolean);
+  return {candidates,state:candidates.length?'candidates':'not_found',matched_by:candidates.length?'anime_tmdb_fallback':'anime_primary',warnings};
 }
