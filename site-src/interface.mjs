@@ -1,5 +1,6 @@
 import './notes-photo.mjs';
 import './item-actions.mjs';
+import './book-add.mjs';
 const heading=document.querySelector('header h1');
 if(heading){heading.textContent='';const home=document.createElement('a');home.href='./';home.textContent='MOVOOK';home.style.cssText='color:inherit;text-decoration:none';home.setAttribute('aria-label','Ir para a página inicial do MOVOOK');heading.append(home);}
 const custom=document.querySelector('link[href="custom.css"]');
