@@ -1,4 +1,9 @@
-#library #grid .card{background:var(--card);border:1px solid var(--line);border-radius:8px;box-shadow:none;color:var(--text)}
+#library #grid .card{position:relative;background:var(--card);border:1px solid var(--line);border-radius:8px;box-shadow:none;color:var(--text);overflow:hidden}
+#library #grid .card::after{content:'';position:absolute;left:0;right:0;bottom:0;height:4px;background:var(--type-color,transparent);opacity:.85;pointer-events:none}
+#library #grid .card[data-media-type="movie"]{--type-color:#3b82f6}
+#library #grid .card[data-media-type="series"]{--type-color:#8b5cf6}
+#library #grid .card[data-media-type="anime"]{--type-color:#f472b6}
+#library #grid .card[data-media-type="book"]{--type-color:#65a30d}
 #library #grid .card>.cover{width:100%;border-radius:0;overflow:hidden}
 #library #grid .card>.info small{display:block;color:var(--muted);margin-top:.2rem}
 #library #grid .badge{background:rgba(20,20,24,.82);color:#fff;border:0;box-shadow:none;border-radius:6px;font-variant-numeric:tabular-nums}
