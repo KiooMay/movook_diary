@@ -25,5 +25,19 @@ export async function searchAnimeFallback(payload,call){
       return {candidates:ordered,state:'candidates',matched_by:'anime_jikan'};
     }
   }catch(error){console.warn(error);}
-  return call(payload);
+  const candidates=[],fallbackErrors=[],seen=new Set();
+  for(const type of ['series','movie']){
+    try{
+      const result=await call({type,title,...(payload.year?{year:payload.year}:{})});
+      for(const match of (result.candidates||[]).slice(0,3)){
+        if(match.provider!=='tmdb'||!match.id)continue;
+        const response=match.details_needed?await call({type,action:'details',id:match.id}):{candidates:[match]};
+        const detail=response.candidates?.[0];if(!detail)continue;
+        if(!(detail.genres||[]).some(genre=>['animation','animacao'].includes(normalize(genre))))continue;
+        const key=type+':'+detail.id;if(seen.has(key))continue;seen.add(key);
+        candidates.push({...detail,type:'anime',details_needed:false,anime_fallback:true,external_ids:{...(detail.external_ids||{}),tmdb:String(detail.id),tmdb_media_type:type}});
+      }
+    }catch(error){fallbackErrors.push(error.message||'Falha TMDB');}
+  }
+  return {candidates,state:candidates.length?'candidates':'not_found',matched_by:candidates.length?'anime_tmdb_fallback':'anime_primary',warnings:fallbackErrors};
 }
