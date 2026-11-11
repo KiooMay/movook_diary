@@ -1,3 +1,4 @@
+import './library-filters.mjs';
 function clean(){
   const el=document.querySelector('#insights');
   if(!el)return;
