@@ -1,1 +1,119 @@
-<YAML completo do workflow de deploy, com notes-photo.mjs removido do carregamento e da validação>
+name: Deploy site
+on:
+  push:
+    branches: [main]
+    paths: ["media/**", "data/**", "site-src/**", "scripts/**", ".github/workflows/deploy-site.yml"]
+  workflow_run:
+    workflows: ["Add media", "Remove media", "Edit media", "AI enrich"]
+    types: [completed]
+  workflow_dispatch:
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+concurrency:
+  group: pages
+  cancel-in-progress: true
+jobs:
+  deploy:
+    if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Recover intact HTML and service worker from Git history
+        run: |
+          set -eu
+          original=f8cd65754337829065ac45d58252764ad3a67a56
+          git fetch --no-tags --depth=1 origin "$original"
+          git show "$original:site-src/index.html" > site-src/index.html
+          git show "$original:site-src/sw.js" > site-src/sw.js
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: node --check site-src/sw.js
+      - run: node --check site-src/importer.mjs
+      - run: node --check site-src/book-metadata.mjs
+      - run: node --check site-src/books-proxy.mjs
+      - run: node --check site-src/media-metadata.mjs
+      - run: node --check site-src/interface.mjs
+      - run: node --check site-src/account-profile.mjs
+      - run: node --check site-src/avatar.mjs
+      - run: node --check site-src/mobile-account.mjs
+      - run: node --check site-src/navigation-auth.mjs
+      - run: node --check site-src/auto-enrich.mjs
+      - run: node --check site-src/notes.mjs
+      - run: node --check site-src/notes-gallery.mjs
+      - run: node --check site-src/hide-recommendations.mjs
+      - run: node scripts/ai-insights.mjs
+      - run: node scripts/book-metadata.test.mjs
+      - run: node scripts/books-proxy.test.mjs
+      - run: node scripts/media-metadata.test.mjs
+      - run: node scripts/simplify-statistics.test.mjs
+      - run: node scripts/account-profile.test.mjs
+      - run: node scripts/avatar.test.mjs
+      - run: node scripts/retire-worker-ui.test.mjs
+      - run: node scripts/mobile-account.test.mjs
+      - run: node scripts/navigation-auth.test.mjs
+      - run: node scripts/build-site.mjs
+      - name: Connect account importer and metadata completion
+        run: |
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          const path='_site/index.html';
+          let html=fs.readFileSync(path,'utf8');
+          const needle='sb = createClient(SUPABASE_URL, SUPABASE_KEY);';
+          if(!html.includes(needle)||!html.includes('</body>')) throw Error('Importer integration target missing');
+          html=html.replace(needle,needle+' window.__movookClient = sb;');
+          html=html.replace('</body>','<script type="module" src="book-metadata.mjs"></script>\n<script type="module" src="importer.mjs"></script>\n<script type="module" src="media-metadata.mjs"></script>\n<script type="module" src="interface.mjs"></script>\n<script type="module" src="account-profile.mjs"></script>\n<script type="module" src="avatar.mjs"></script>\n<script type="module" src="mobile-account.mjs"></script>\n<script type="module" src="navigation-auth.mjs"></script>\n<script type="module" src="auto-enrich.mjs"></script>\n<script type="module" src="notes.mjs"></script>\n<script type="module" src="notes-gallery.mjs"></script>\n<script type="module" src="hide-recommendations.mjs"></script>\n</body>');
+          fs.writeFileSync(path,html);
+          const importerPath='_site/importer.mjs';
+          let importer=fs.readFileSync(importerPath,'utf8');
+          const hook='await window.__movookAccount.refresh();';
+          if(importer.split(hook).length!==2) throw Error('Import completion hook target missing or ambiguous');
+          importer=importer.replace(hook,hook+" window.__movookMetadata?.offer();");
+          fs.writeFileSync(importerPath,importer);
+          const metadataPath='_site/media-metadata.mjs';
+          let metadata=fs.readFileSync(metadataPath,'utf8');
+          function replaceOnce(from,to){if(metadata.split(from).length!==2)throw Error('Metadata integration target missing or ambiguous: '+from);metadata=metadata.replace(from,to);}
+          replaceOnce('export function missing(i){',"export function needsCompletion(i){return ['cover','synopsis'].some(k=>typeof i[k]!=='string'||!i[k].trim());}\nexport function missing(i){");
+          replaceOnce('missing(x.r.data).length&&(!type||x.r.data.type===type)','needsCompletion(x.r.data)&&(!type||x.r.data.type===type)');
+          replaceOnce("missing(r.data).join(', ')","['cover','synopsis'].filter(k=>typeof r.data[k]!=='string'||!r.data[k].trim()).join(', ')");
+          replaceOnce("missing(i).length?' · Ficha incompleta':''","needsCompletion(i)?' · Ficha incompleta':''");
+          replaceOnce("guard();await window.__movookAccount.refresh();$('[data-results]').textContent='';", "guard();await window.__movookAccount.refresh();guard();rows=await loadAll(client,owner);guard();list();decorate();$('[data-results]').textContent='';");
+          replaceOnce('Campos não encontrados continuam pendentes.','Só os itens ainda sem capa ou sinopse continuam nesta lista.');
+          fs.writeFileSync(metadataPath,metadata);
+          const {needsCompletion}=await import('./_site/media-metadata.mjs');
+          if(needsCompletion({cover:'https://example.com/cover.jpg',synopsis:'Texto'}))throw Error('Complete card must not be listed');
+          for(const item of [{},{cover:'https://example.com/cover.jpg'},{synopsis:'Texto'},{cover: ' ',synopsis:'Texto'}])if(!needsCompletion(item))throw Error('Missing cover/synopsis must be listed');
+          NODE
+      - run: node --check _site/media-metadata.mjs
+      - run: node scripts/connect-books-proxy.mjs
+      - run: node scripts/simplify-statistics.mjs
+      - run: node scripts/connect-account-profile.mjs
+      - run: node scripts/connect-avatar.mjs
+      - run: node scripts/clean-navigation.mjs
+      - run: node scripts/retire-worker-ui.mjs
+      - run: node scripts/private-library.mjs
+      - name: Validate library grid and generated scripts
+        run: |
+          node --check _site/sw.js
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          const css=fs.readFileSync('_site/custom.css','utf8');
+          if(!css.includes('repeat(4,minmax(0,1fr))')||!css.includes('repeat(8,minmax(0,1fr))')) throw Error('Missing 4/8 grid rules');
+          if(/repeat\((5|6|10),minmax\(0,1fr\)\)/.test(css)) throw Error('Obsolete library grid rules');
+          const html=fs.readFileSync('_site/index.html','utf8');
+          if(!html.includes('custom.css')||!html.includes('</body>')) throw Error('Incomplete generated HTML');
+          if(html.includes('notes-photo.mjs')) throw Error('Legacy notes photo module must not be loaded');
+          NODE
+      - run: node --check _site/book-metadata.mjs
+      - run: node --check _site/interface.mjs
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+      - id: deployment
+        uses: actions/deploy-pages@v4
