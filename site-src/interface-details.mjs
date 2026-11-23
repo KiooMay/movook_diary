@@ -6,7 +6,7 @@ function decorate(root){
     const text=[...button.childNodes].find(node=>node.nodeType===3&&node.nodeValue.trim());if(!text)continue;
     const match=icons.find(([pattern])=>pattern.test(text.nodeValue));if(!match)continue;
     text.nodeValue=text.nodeValue.replace(match[0],'');
-    const svg=document.createElementNS('http://www.w3.org/2000/svg','svg');svg.setAttribute('viewBox','0 0 24 24');svg.setAttribute('aria-hidden','true');svg.setAttribute('focusable','false');svg.classList.add('detail-action-icon');
+    const svg=document.createElementNS('http://www.w3.org/2000/svg','svg');svg.setAttribute('viewBox','0 0 24 24');svg.setAttribute('width','16');svg.setAttribute('height','16');svg.setAttribute('aria-hidden','true');svg.setAttribute('focusable','false');svg.classList.add('detail-action-icon');
     const path=document.createElementNS('http://www.w3.org/2000/svg','path');path.setAttribute('d',match[1]);svg.append(path);button.prepend(svg);
   }
 }
