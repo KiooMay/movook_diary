@@ -1,1 +1,52 @@
-<CSS completo atualizado, com #addBtn/#addLink compactos e botões de formulário sem esticar>
+:root{--detail-space-1:4px;--detail-space-2:8px;--detail-space-3:12px;--detail-space-4:16px;--detail-space-5:24px;--detail-radius-control:10px;--detail-radius-cover:8px;--detail-radius-panel:12px;--detail-shadow:0 12px 32px rgba(0,0,0,.18)}
+body{font-family:system-ui,-apple-system,'Segoe UI',Roboto,sans-serif}
+body .btn,body .close,body .form input,body .form select,body .form textarea,body .controls input,body .controls select{border-radius:var(--detail-radius-control)}
+body .form input,body .form select,body .form textarea,body .controls input,body .controls select{border-color:var(--line)}
+body .btn,body .close{font-weight:550}
+body .form label{font-size:.875rem;line-height:1.45}
+body dialog{border-radius:var(--detail-radius-panel);border-color:var(--line);box-shadow:var(--detail-shadow)}
+body dialog .m{padding:var(--detail-space-4);gap:var(--detail-space-4)}
+body dialog h2{font-size:1.25rem;line-height:1.3;font-weight:600;letter-spacing:-.025em}
+body dialog h3{font-size:.875rem;line-height:1.4;font-weight:600}
+body .row,body .ui-dialog-actions{gap:var(--detail-space-2)}
+body .ui-dialog-actions{padding-top:var(--detail-space-4);margin-top:var(--detail-space-1)}
+body .ui-more-panel,body .view-menu-list{border-radius:var(--detail-radius-panel);border-color:var(--line);padding:var(--detail-space-2);gap:var(--detail-space-1);box-shadow:var(--detail-shadow)}
+body .ui-more-panel button,body .ui-more-panel a,body .view-menu-list>button{border-radius:var(--detail-radius-control)}
+body .stat,body .note-card{box-shadow:none}
+body .card,body .card:hover{box-shadow:none;transform:none}
+#library #grid .card{border-radius:var(--detail-radius-cover)}
+#library #types{gap:var(--detail-space-2)}
+#notes .note-actions{display:flex;flex-wrap:nowrap;align-items:center;gap:var(--detail-space-2)}
+#notes .note-actions .btn{flex:1 1 0;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding-inline:.45rem}
+#addBtn,#addLink{width:auto;max-width:max-content;flex:0 0 auto;padding:.3rem .9rem;font-size:1rem}
+body .btn.fill{width:auto;max-width:max-content}
+body .row .btn,body .ui-dialog-actions .btn{width:auto;max-width:100%}
+body button,body a.btn,body summary,body input,body select,body textarea{transition:background-color .12s ease,border-color .12s ease,color .12s ease}
+body :where(button,a,input,select,textarea,summary):focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+body .detail-action-icon{width:16px;height:16px;display:inline-block;vertical-align:-3px;margin-right:6px;stroke:currentColor;stroke-width:1.75;fill:none;stroke-linecap:round;stroke-linejoin:round;pointer-events:none}
+header nav .nav-tools>#refreshBtn{font-size:0;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%236b6b76' stroke-width='1.75' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M21 12a9 9 0 1 1-2.64-6.36M21 3v6h-6'/%3E%3C/svg%3E");background-size:18px 18px;background-position:center;background-repeat:no-repeat}
+@media(prefers-color-scheme:dark){header nav .nav-tools>#refreshBtn{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23b8b8c3' stroke-width='1.75' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M21 12a9 9 0 1 1-2.64-6.36M21 3v6h-6'/%3E%3C/svg%3E")}}
+@media(prefers-reduced-motion:reduce){body button,body a.btn,body summary,body input,body select,body textarea,body .card{transition:none}}
+/* Notes controls, including dialogs mounted directly on body. */
+body #notes button:not(.note-cover):not(.note-title),body dialog:has([name=photos]) button,body dialog:has([data-list]) button,body dialog:has(.note-gallery) .btn,body dialog:has(img[alt='Foto em grande']) .close{appearance:none;-webkit-appearance:none;font:inherit;font-size:.875rem;font-weight:550;line-height:1.4;min-height:40px;padding:.5rem .85rem;border:1px solid var(--line);border-radius:var(--detail-radius-control,10px);background:var(--card);color:var(--text);cursor:pointer}
+body #notes button:not(.note-cover):not(.note-title):hover,body dialog:has([name=photos]) button:hover,body dialog:has([data-list]) button:hover{background:color-mix(in srgb,var(--accent) 8%,var(--card));border-color:color-mix(in srgb,var(--accent) 35%,var(--line))}
+body #notes [data-new],body dialog:has([name=photos]) button[type=submit],body dialog:has([data-list]) button[type=submit]{background:var(--accent);border-color:var(--accent);color:var(--movook-accent-ink,#fff)}
+body #notes [data-new]:hover,body dialog:has([name=photos]) button[type=submit]:hover,body dialog:has([data-list]) button[type=submit]:hover{background:var(--accent);filter:brightness(.95)}
+body #notes [data-states]{display:flex;flex-wrap:wrap;gap:.4rem;margin-bottom:1rem}
+body #notes [data-states] button{background:transparent;border-color:transparent;color:var(--muted)}
+body #notes [data-states] button.on{background:var(--card);border-color:var(--line);color:var(--text);box-shadow:inset 0 -2px 0 var(--accent)}
+body #notes input[type=search]{appearance:none;min-height:46px;padding:.65rem .85rem;border:1px solid var(--line);border-radius:var(--detail-radius-control,10px);background:var(--card);color:var(--text);font:inherit}
+body dialog:has([name=photos]) .note-previews{display:grid;grid-template-columns:repeat(auto-fit,minmax(115px,1fr));gap:.65rem}
+body dialog:has([name=photos]) .note-preview{position:relative;min-width:0;overflow:hidden;border:1px solid var(--line);border-radius:12px;background:var(--card)}
+body dialog:has([name=photos]) .note-preview img{display:block;width:100%;height:130px;object-fit:cover}
+body dialog:has([name=photos]) .note-preview-actions{display:flex;flex-wrap:wrap;gap:.3rem;padding:.4rem}
+body dialog:has([name=photos]) .note-preview-actions button{min-height:32px;padding:.3rem .45rem;font-size:.75rem}
+body dialog:has([name=photos]) .cover-badge{position:absolute;top:.35rem;left:.35rem;border-radius:999px;padding:.15rem .45rem;background:var(--accent);color:var(--movook-accent-ink,#fff);font-size:.75rem}
+body dialog:has(.note-gallery) .note-gallery{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:.6rem}
+body dialog:has(.note-gallery) .note-gallery button{appearance:none;padding:0;border:0;border-radius:12px;overflow:hidden;background:transparent;cursor:zoom-in}
+body dialog:has(.note-gallery) .note-gallery img{display:block;width:100%;height:150px;object-fit:cover}
+body dialog:has(.note-gallery) .note-text{white-space:pre-wrap;overflow-wrap:anywhere}
+body dialog:has(img[alt='Foto em grande']){width:min(96vw,1100px);max-width:96vw;max-height:94vh;padding:.5rem;background:var(--card);overflow:auto}
+body dialog:has(img[alt='Foto em grande']) img{display:block;width:100%;max-height:82vh;object-fit:contain}
+body dialog:has(img[alt='Foto em grande']) .close{display:block;margin-left:auto;margin-bottom:.5rem}
+body dialog:has([name=photos]) button:disabled{opacity:.55;cursor:default}
