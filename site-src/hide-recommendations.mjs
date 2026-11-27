@@ -4,6 +4,7 @@ import './interface-details.mjs';
 import './library-extras.mjs';
 import './selected-count.mjs';
 import './password-recovery.mjs';
+import './cover-zoom.mjs';
 function clean(){
   const el=document.querySelector('#insights');
   if(!el)return;
