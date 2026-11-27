@@ -15,12 +15,9 @@ concurrency:
   group: pages
   cancel-in-progress: true
 jobs:
-  deploy:
+  build:
     if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
       - name: Recover intact HTML and service worker from Git history
@@ -115,5 +112,15 @@ jobs:
       - uses: actions/upload-pages-artifact@v3
         with:
           path: _site
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    permissions:
+      pages: write
+      id-token: write
+    steps:
       - id: deployment
         uses: actions/deploy-pages@v4
