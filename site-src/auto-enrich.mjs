@@ -1,4 +1,4 @@
-import {lookup as lookupBook,resolveCandidate as resolveBookPreview} from './book-metadata.mjs';
+import {lookup as lookupBook,resolveCandidate as resolveBookPreview,isbnOf} from './book-metadata.mjs';
 import {readGoogleBooks} from './books-proxy.mjs';
 import {makePatch,safeURL} from './media-metadata.mjs';
 export function parseTitleYear(value,defaultYear=''){
@@ -35,9 +35,11 @@ function rank(candidates,item){
  const titles=[item.title,item.alternate].filter(Boolean).map(norm);
  const person=norm(item.creators?.[0]||'');
  const publisher=norm(item.publisher||'');
+ const wanted=item.type==='book'?isbnOf(item):'';
  const score=c=>{
   const names=[c.title,c.original_title,...(c.creators||[]),...(c.authors||[])].map(norm);
   let value=0;
+  if(wanted&&(c.isbns||[]).includes(wanted))value+=300;
   if(titles.some(t=>t&&names.includes(t)))value+=100;
   if(person&&names.includes(person))value+=50;
   if(item.year&&yearOf(c)===item.year)value+=25;
@@ -84,20 +86,22 @@ function init(){
   const url=safeURL(chosen.source_url||chosen.url||'');
   if(url)output.source_url=url;
   if(chosen.title)output.original_title=chosen.original_title||chosen.title;
+  if(!output.title&&chosen.title)output.title=chosen.title;
   if(item.year)output.requested_year=item.year;
   return output;
  }
  function wrap(){const account=window.__movookAccount;if(!account?.addPersonal||account===wrappedAccount)return;const original=account.addPersonal.bind(account);wrappedAccount=account;account.addPersonal=async item=>{const uid=context().uid;let next=item;if(!approved.has(item)){const parsed=parseTitleYear(item.title,item.year);next={...item,title:parsed.title,alternate:parsed.alternate,original_title:parsed.title,year:parsed.year};if(isMedia(next)&&(!next.cover||!next.synopsis)){const candidates=await findVersions(next,call);if(candidates.length){const chosen=await resolve(candidates[0],next);if(next.year&&yearOf(chosen)!==next.year&&!confirm('Não foi encontrada a versão de '+next.year+'. Adicionar '+chosen.title+' ('+(yearOf(chosen)||'ano desconhecido')+')?'))throw Error('Adição cancelada.');next=withVersion(next,chosen);}}}guard(uid);return original(next);};}
  function installForm(form){if(form.dataset.versionPicker)return;form.dataset.versionPicker='true';
  const titleField=form.querySelector('#fTitles');if(!titleField)return;
+ titleField.required=false;
  const typeField=form.querySelector('#fType');
  const label=document.createElement('label');label.textContent='Ano (opcional; usado nas linhas sem | Ano)';const year=document.createElement('input');year.id='fYear';year.type='number';year.min='1000';year.max='9999';year.step='1';year.inputMode='numeric';label.append(year);titleField.closest('label').after(label);
  const personLabel=document.createElement('label');const person=document.createElement('input');person.id='fPerson';personLabel.append(person);label.after(personLabel);
- const isbnLabel=document.createElement('label');isbnLabel.textContent='ISBN (recomendado)';const isbn=document.createElement('input');isbn.id='fIsbn';isbn.placeholder='978… ou 10 dígitos';isbn.inputMode='text';isbnLabel.append(isbn);
+ const isbnLabel=document.createElement('label');isbnLabel.textContent='ISBN (prioritário: com ISBN válido o título é opcional)';const isbn=document.createElement('input');isbn.id='fIsbn';isbn.placeholder='978… ou 10 dígitos';isbn.inputMode='text';isbnLabel.append(isbn);
  const publisherLabel=document.createElement('label');publisherLabel.textContent='Editora (opcional)';const publisher=document.createElement('input');publisher.id='fPublisher';publisherLabel.append(publisher);
  personLabel.after(isbnLabel);isbnLabel.after(publisherLabel);
  const updatePersonLabel=()=>{const book=typeField?.value==='book';personLabel.textContent='';personLabel.textContent=book?'Autor (opcional)':'Realizador/Diretor (opcional)';personLabel.append(person);isbnLabel.hidden=!book;publisherLabel.hidden=!book;};updatePersonLabel();typeField?.addEventListener('change',updatePersonLabel);
- const help=document.createElement('p');help.className='muted';help.textContent='Podes escrever Título | Ano ou Título | Título alternativo em cada linha. Para livros, indica o autor; para filmes, séries e animes, indica o realizador/diretor. Revê a obra antes de adicionar.';label.after(help);
+ const help=document.createElement('p');help.className='muted';help.textContent='Nos livros, um ISBN válido tem prioridade e o título passa a ser opcional; título, autor, editora e ano servem apenas para confirmar ou refinar. Podes escrever Título | Ano ou Título | Título alternativo em cada linha. Para filmes, séries e animes, indica o realizador/diretor. Revê a obra antes de adicionar.';label.after(help);
  const panel=document.createElement('div');panel.dataset.versions='';panel.setAttribute('aria-live','polite');form.querySelector('.row')?.before(panel);if(!panel.parentElement)form.append(panel);
  const submit=form.querySelector('[type=submit]');if(submit)submit.textContent='Pesquisar / Pré-visualizar';
  let searching=false,saving=false,resolving=0,revision=0,plans=[],owner='';
@@ -116,7 +120,7 @@ function init(){
   const description=document.createElement('p');description.textContent=String(chosen.synopsis||'Sem sinopse disponível.').slice(0,700);box.append(description);
  }
  function render(){
-  panel.innerHTML=plans.map((p,k)=>'<section class="stat"><h3>'+esc([p.item.title,p.item.alternate].filter(Boolean).join(' | '))+(p.item.year?' — pedido: '+p.item.year:'')+'</h3>'+(p.candidates.length?'<label>Versão<select data-version="'+k+'">'+p.candidates.map((c,j)=>{const names=[c.title,c.original_title].filter((v,i,a)=>v&&a.indexOf(v)===i).join(' · ');return '<option value="'+j+'">'+esc(names||c.title)+' — '+esc(yearOf(c)||'ano desconhecido')+'</option>';}).join('')+'</select></label><div data-preview="'+k+'"></div>':'<p class="muted">Sem resultados. Será adicionada uma ficha pendente com o título e ano pedidos.</p>')+'</section>').join('');
+  panel.innerHTML=plans.map((p,k)=>'<section class="stat"><h3>'+esc([p.item.title,p.item.alternate].filter(Boolean).join(' | ')||'ISBN '+(p.item.external_ids?.isbn||''))+(p.item.year?' — pedido: '+p.item.year:'')+'</h3>'+(p.candidates.length?'<label>Versão<select data-version="'+k+'">'+p.candidates.map((c,j)=>{const names=[c.title,c.original_title].filter((v,i,a)=>v&&a.indexOf(v)===i).join(' · ');return '<option value="'+j+'">'+esc(names||c.title)+' — '+esc(yearOf(c)||'ano desconhecido')+'</option>';}).join('')+'</select></label><div data-preview="'+k+'"></div>':'<p class="muted">'+(p.item.title?'Sem resultados. Será adicionada uma ficha pendente com o título e ano pedidos.':'Sem resultados para este ISBN. Indica também o título para criar a ficha.')+'</p>')+'</section>').join('');
   const save=document.createElement('button');save.type='button';save.className='btn fill';save.textContent='Adicionar versões selecionadas';save.onclick=commit;panel.append(save);
   plans.forEach((p,k)=>showChoice(p,k));
   panel.querySelectorAll('[data-version]').forEach(control=>control.onchange=async()=>{
@@ -128,7 +132,7 @@ function init(){
  }
  async function commit(){
   if(saving||searching||resolving)return;const ticket=revision;
-  try{guard(owner);saving=true;form.querySelectorAll('button,input,select,textarea').forEach(n=>n.disabled=true);
+  try{guard(owner);if(plans.some(p=>!p.item.title&&!p.chosen))throw Error('Sem título e sem resultado para o ISBN; indica o título para criar a ficha.');saving=true;form.querySelectorAll('button,input,select,textarea').forEach(n=>n.disabled=true);
    for(const plan of plans){if(plan.saved)continue;guard(owner);if(ticket!==revision)throw Error('A seleção mudou. Volta a pesquisar.');const next=plan.chosen?withVersion(plan.item,plan.chosen):{...plan.item};approved.add(next);await context().account.addPersonal(next);plan.saved=true;}
    guard(owner);form.closest('dialog')?.close();if(typeof window.toast==='function')window.toast('Itens adicionados à tua biblioteca.');
   }catch(e){message('Erro: '+e.message+' Os itens já adicionados não serão repetidos se tentares novamente.');}
@@ -140,11 +144,14 @@ function init(){
   const ticket=++revision;
   try{
    wrap();owner=context().uid;
-   const lines=titleField.value.split(/\r?\n/).map(s=>s.trim()).filter(Boolean);
-   if(!lines.length||lines.length>30)throw Error('Indica entre 1 e 30 títulos.');
-   const parsed=lines.map(t=>parseTitleYear(t,year.value));
-   const type=form.querySelector('#fType').value,status=form.querySelector('#fStatus').value,rating=lines.length===1&&form.querySelector('#fRating').value!==''?Number(form.querySelector('#fRating').value):null,review=lines.length===1?form.querySelector('#fReview').value:'',person=form.querySelector('#fPerson')?.value.trim()||'',isbn=(form.querySelector('#fIsbn')?.value||'').replace(/[^0-9Xx]/g,'').toUpperCase(),publisher=form.querySelector('#fPublisher')?.value.trim()||'';
+   const type=form.querySelector('#fType').value,person=form.querySelector('#fPerson')?.value.trim()||'',isbn=(form.querySelector('#fIsbn')?.value||'').replace(/[^0-9Xx]/g,'').toUpperCase(),publisher=form.querySelector('#fPublisher')?.value.trim()||'';
    if(type==='book'&&isbn&&!/^(?:\d{9}[\dX]|\d{13})$/.test(isbn))throw Error('ISBN inválido. Usa 10 ou 13 dígitos, com ou sem hífens.');
+   const isbnOk=type==='book'&&!!isbn&&!!isbnOf({external_ids:{isbn}});
+   const lines=titleField.value.split(/\r?\n/).map(s=>s.trim()).filter(Boolean);
+   if(!lines.length&&isbnOk)lines.push('');
+   if(!lines.length||lines.length>30)throw Error(type==='book'&&isbn&&!isbnOk?'ISBN com dígito de controlo inválido. Confirma-o ou indica o título.':'Indica entre 1 e 30 títulos.');
+   const parsed=lines.map(t=>t?parseTitleYear(t,year.value):{title:'',alternate:'',year:year.value?Number(year.value):null});
+   const status=form.querySelector('#fStatus').value,rating=lines.length===1&&form.querySelector('#fRating').value!==''?Number(form.querySelector('#fRating').value):null,review=lines.length===1?form.querySelector('#fReview').value:'';
    searching=true;panel.textContent='A pesquisar versões…';if(submit)submit.disabled=true;plans=[];
    for(const entry of parsed){
     guard(owner);
