@@ -64,7 +64,6 @@ export async function findVersions(item,call){
  return rank(candidates,item);
 }
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const wookUrl=isbn=>'https://www.wook.pt/pesquisa/'+encodeURIComponent(isbn);
 const isMedia=i=>['movie','series','anime','book'].includes(i.type);
 function init(){
  let activeOwner='',wrappedAccount=null;const approved=new WeakSet(),cache=new Map();
@@ -117,7 +116,7 @@ function init(){
   const description=document.createElement('p');description.textContent=String(chosen.synopsis||'Sem sinopse disponível.').slice(0,700);box.append(description);
  }
  function render(){
-  panel.innerHTML=plans.map((p,k)=>'<section class="stat"><h3>'+esc([p.item.title,p.item.alternate].filter(Boolean).join(' | '))+(p.item.year?' — pedido: '+p.item.year:'')+'</h3>'+(p.candidates.length?'<label>Versão<select data-version="'+k+'">'+p.candidates.map((c,j)=>{const names=[c.title,c.original_title].filter((v,i,a)=>v&&a.indexOf(v)===i).join(' · ');return '<option value="'+j+'">'+esc(names||c.title)+' — '+esc(yearOf(c)||'ano desconhecido')+'</option>';}).join('')+'</select></label><div data-preview="'+k+'"></div>':'<p class="muted">Sem resultados. Será adicionada uma ficha pendente com o título e ano pedidos.</p>')+(p.item.type==='book'&&p.item.external_ids?.isbn?'<p><a class="btn" target="_blank" rel="noopener noreferrer" href="'+esc(wookUrl(p.item.external_ids.isbn))+'">Procurar no WOOK</a></p>':'')+'</section>').join('');
+  panel.innerHTML=plans.map((p,k)=>'<section class="stat"><h3>'+esc([p.item.title,p.item.alternate].filter(Boolean).join(' | '))+(p.item.year?' — pedido: '+p.item.year:'')+'</h3>'+(p.candidates.length?'<label>Versão<select data-version="'+k+'">'+p.candidates.map((c,j)=>{const names=[c.title,c.original_title].filter((v,i,a)=>v&&a.indexOf(v)===i).join(' · ');return '<option value="'+j+'">'+esc(names||c.title)+' — '+esc(yearOf(c)||'ano desconhecido')+'</option>';}).join('')+'</select></label><div data-preview="'+k+'"></div>':'<p class="muted">Sem resultados. Será adicionada uma ficha pendente com o título e ano pedidos.</p>')+'</section>').join('');
   const save=document.createElement('button');save.type='button';save.className='btn fill';save.textContent='Adicionar versões selecionadas';save.onclick=commit;panel.append(save);
   plans.forEach((p,k)=>showChoice(p,k));
   panel.querySelectorAll('[data-version]').forEach(control=>control.onchange=async()=>{
@@ -138,7 +137,7 @@ function init(){
  form.addEventListener('submit',async e=>{
   e.preventDefault();e.stopImmediatePropagation();
   if(searching||saving)return;if(!form.reportValidity())return;
-  const ticket=++revision;let wookIsbn='';
+  const ticket=++revision;
   try{
    wrap();owner=context().uid;
    const lines=titleField.value.split(/\r?\n/).map(s=>s.trim()).filter(Boolean);
@@ -146,7 +145,6 @@ function init(){
    const parsed=lines.map(t=>parseTitleYear(t,year.value));
    const type=form.querySelector('#fType').value,status=form.querySelector('#fStatus').value,rating=lines.length===1&&form.querySelector('#fRating').value!==''?Number(form.querySelector('#fRating').value):null,review=lines.length===1?form.querySelector('#fReview').value:'',person=form.querySelector('#fPerson')?.value.trim()||'',isbn=(form.querySelector('#fIsbn')?.value||'').replace(/[^0-9Xx]/g,'').toUpperCase(),publisher=form.querySelector('#fPublisher')?.value.trim()||'';
    if(type==='book'&&isbn&&!/^(?:\d{9}[\dX]|\d{13})$/.test(isbn))throw Error('ISBN inválido. Usa 10 ou 13 dígitos, com ou sem hífens.');
-   wookIsbn=type==='book'?isbn:'';
    searching=true;panel.textContent='A pesquisar versões…';if(submit)submit.disabled=true;plans=[];
    for(const entry of parsed){
     guard(owner);
@@ -158,7 +156,7 @@ function init(){
     plans.push({item,candidates,chosen,index:0,saved:false});
    }
    if(ticket===revision)render();
-  }catch(e){if(ticket===revision){panel.replaceChildren();message('Erro: '+e.message);if(wookIsbn){const p=document.createElement('p'),a=document.createElement('a');a.className='btn';a.target='_blank';a.rel='noopener noreferrer';a.href=wookUrl(wookIsbn);a.textContent='Procurar no WOOK';p.append(a);panel.append(p);}}}
+  }catch(e){if(ticket===revision){panel.replaceChildren();message('Erro: '+e.message);}}
   finally{searching=false;if(submit)submit.disabled=false;}
  },true);
  }
