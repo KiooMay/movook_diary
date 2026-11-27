@@ -100,15 +100,49 @@ function init(){
  const isbnLabel=document.createElement('label');isbnLabel.textContent='ISBN (prioritário: com ISBN válido o título é opcional)';const isbn=document.createElement('input');isbn.id='fIsbn';isbn.placeholder='978… ou 10 dígitos';isbn.inputMode='text';isbnLabel.append(isbn);
  const publisherLabel=document.createElement('label');publisherLabel.textContent='Editora (opcional)';const publisher=document.createElement('input');publisher.id='fPublisher';publisherLabel.append(publisher);
  personLabel.after(isbnLabel);isbnLabel.after(publisherLabel);
- const updatePersonLabel=()=>{const book=typeField?.value==='book';personLabel.textContent='';personLabel.textContent=book?'Autor (opcional)':'Realizador/Diretor (opcional)';personLabel.append(person);isbnLabel.hidden=!book;publisherLabel.hidden=!book;};updatePersonLabel();typeField?.addEventListener('change',updatePersonLabel);
+ const updatePersonLabel=()=>{const book=typeField?.value==='book';personLabel.textContent='';personLabel.textContent=book?'Autor (opcional)':'Realizador/Diretor (opcional)';personLabel.append(person);};updatePersonLabel();
  const help=document.createElement('p');help.className='muted';help.textContent='Nos livros, um ISBN válido tem prioridade e o título passa a ser opcional; título, autor, editora e ano servem apenas para confirmar ou refinar. Podes escrever Título | Ano ou Título | Título alternativo em cada linha. Para filmes, séries e animes, indica o realizador/diretor. Revê a obra antes de adicionar.';label.after(help);
  const panel=document.createElement('div');panel.dataset.versions='';panel.setAttribute('aria-live','polite');form.querySelector('.row')?.before(panel);if(!panel.parentElement)form.append(panel);
  const submit=form.querySelector('[type=submit]');if(submit)submit.textContent='Pesquisar / Pré-visualizar';
+ const show=(n,on)=>{n.style.display=on?'':'none';};
+ const titleLabel=titleField.closest('label');
+ let manual=false;
+ const manualBtn=document.createElement('button');manualBtn.type='button';manualBtn.className='btn';manualBtn.textContent='Manual';manualBtn.setAttribute('aria-pressed','false');
+ const heading=form.querySelector('h2');
+ if(heading){const bar=document.createElement('div');bar.style.cssText='display:flex;align-items:center;justify-content:space-between;gap:.5rem';heading.before(bar);bar.append(heading,manualBtn);}else form.prepend(manualBtn);
+ const manualBox=document.createElement('div');manualBox.className='form';manualBox.dataset.manualAdd='';manualBox.style.display='none';
+ manualBox.innerHTML='<label>Título *<input data-a-title></label><label>Ano (opcional)<input data-a-year type="number" min="1000" max="9999" step="1" inputmode="numeric"></label><label data-a-person-label>Autor (opcional)<input data-a-person></label><label data-a-book>ISBN (opcional)<input data-a-isbn placeholder="978… ou 10 dígitos"></label><label data-a-book>Editora (opcional)<input data-a-publisher></label><label>Sinopse (opcional)<textarea data-a-synopsis rows="4"></textarea></label><label>URL da capa (https, opcional)<input data-a-cover type="url" placeholder="https://…"></label><div data-a-preview></div>';
+ panel.before(manualBox);
+ function layout(){const book=typeField?.value==='book';show(titleLabel,!manual);show(label,!manual);show(help,!manual);show(personLabel,!manual);show(isbnLabel,!manual&&book);show(publisherLabel,!manual&&book);manualBox.style.display=manual?'grid':'none';manualBox.querySelectorAll('[data-a-book]').forEach(n=>show(n,book));manualBox.querySelector('[data-a-person-label]').firstChild.textContent=book?'Autor (opcional)':'Realizador/Diretor (opcional)';manualBtn.setAttribute('aria-pressed',String(manual));manualBtn.classList.toggle('fill',manual);if(submit)submit.textContent=manual?'Adicionar':'Pesquisar / Pré-visualizar';}
  let searching=false,saving=false,resolving=0,revision=0,plans=[],owner='';
  function invalidate(){if(saving)return;revision++;plans=[];panel.replaceChildren();}
  form.addEventListener('input',e=>{if(!panel.contains(e.target))invalidate();});
  form.addEventListener('change',e=>{if(!panel.contains(e.target))invalidate();});
  const message=text=>{const p=document.createElement('p');p.textContent=text;panel.append(p);};
+ manualBtn.onclick=()=>{if(saving||searching)return;manual=!manual;invalidate();layout();};
+ typeField?.addEventListener('change',()=>{updatePersonLabel();layout();});
+ manualBox.querySelector('[data-a-cover]').addEventListener('change',e=>{const box=manualBox.querySelector('[data-a-preview]');box.replaceChildren();const value=e.target.value.trim();if(!value)return;const url=safeURL(value);if(!url||!url.startsWith('https://')){const p=document.createElement('p');p.className='danger';p.textContent='Usa um URL https direto para a imagem.';box.append(p);return;}const img=document.createElement('img');img.src=url;img.alt='Pré-visualização da capa';img.style.cssText='width:90px;max-height:140px;object-fit:cover';img.referrerPolicy='no-referrer';img.addEventListener('error',()=>{box.replaceChildren();const p=document.createElement('p');p.className='danger';p.textContent='A imagem não carregou; confirma o URL.';box.append(p);});box.append(img);});
+ async function addManual(){
+  const q=s=>manualBox.querySelector(s);
+  saving=true;if(submit)submit.disabled=true;panel.replaceChildren();
+  try{
+   wrap();owner=context().uid;
+   const type=form.querySelector('#fType').value,title=q('[data-a-title]').value.trim();
+   if(!title)throw Error('Indica o título.');
+   const y=q('[data-a-year]').value.trim();
+   if(y&&!/^[1-9]\d{3}$/.test(y))throw Error('O ano deve ter quatro algarismos.');
+   const rawCover=q('[data-a-cover]').value.trim(),cover=rawCover?(safeURL(rawCover)||''):'';
+   if(rawCover&&!cover.startsWith('https://'))throw Error('O URL da capa deve começar por https://.');
+   const isbnValue=type==='book'?q('[data-a-isbn]').value.replace(/[^0-9Xx]/g,'').toUpperCase():'';
+   if(isbnValue&&!/^(?:\d{9}[\dX]|\d{13})$/.test(isbnValue))throw Error('ISBN inválido. Usa 10 ou 13 dígitos, com ou sem hífens.');
+   const creator=q('[data-a-person]').value.trim(),status=form.querySelector('#fStatus').value,rating=form.querySelector('#fRating').value!==''?Number(form.querySelector('#fRating').value):null,today=new Date().toISOString().slice(0,10);
+   const item={type,title,alternate:'',original_title:title,year:y?Number(y):null,creators:creator?[creator]:[],external_ids:isbnValue?{isbn:isbnValue}:{},publisher:type==='book'?q('[data-a-publisher]').value.trim():'',genres:[],tags:[],rating,status,date_added:today,date_finished:status==='done'?today:'',review:form.querySelector('#fReview').value,synopsis:q('[data-a-synopsis]').value.trim(),cover,source_url:'',length:{}};
+   approved.add(item);guard(owner);await context().account.addPersonal(item);guard(owner);
+   form.closest('dialog')?.close();if(typeof window.toast==='function')window.toast('Item adicionado manualmente à tua biblioteca.');
+  }catch(e){message('Erro: '+e.message);}
+  finally{saving=false;if(submit)submit.disabled=false;}
+ }
+ layout();
  function showChoice(plan,k){
   const box=panel.querySelector('[data-preview="'+k+'"]');if(!box)return;
   const chosen=plan.chosen;box.replaceChildren();if(!chosen)return;
@@ -151,6 +185,7 @@ function init(){
  form.addEventListener('submit',async e=>{
   e.preventDefault();e.stopImmediatePropagation();
   if(searching||saving)return;if(!form.reportValidity())return;
+  if(manual){await addManual();return;}
   const ticket=++revision;
   try{
    wrap();owner=context().uid;
