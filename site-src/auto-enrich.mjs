@@ -120,7 +120,7 @@ function init(){
   const description=document.createElement('p');description.textContent=String(chosen.synopsis||'Sem sinopse disponível.').slice(0,700);box.append(description);
  }
  function render(){
-  panel.innerHTML=plans.map((p,k)=>'<section class="stat"><h3>'+esc([p.item.title,p.item.alternate].filter(Boolean).join(' | ')||'ISBN '+(p.item.external_ids?.isbn||''))+(p.item.year?' — pedido: '+p.item.year:'')+'</h3>'+(p.candidates.length?'<label>Versão<select data-version="'+k+'">'+p.candidates.map((c,j)=>{const names=[c.title,c.original_title].filter((v,i,a)=>v&&a.indexOf(v)===i).join(' · ');return '<option value="'+j+'">'+esc(names||c.title)+' — '+esc(yearOf(c)||'ano desconhecido')+'</option>';}).join('')+'</select></label><div data-preview="'+k+'"></div>':'<p class="muted">'+(p.item.title?'Sem resultados. Será adicionada uma ficha pendente com o título e ano pedidos.':'Sem resultados para este ISBN. Indica também o título para criar a ficha.')+'</p>')+'</section>').join('');
+  panel.innerHTML=plans.map((p,k)=>'<section class="stat"><h3>'+esc([p.item.title,p.item.alternate].filter(Boolean).join(' | ')||'ISBN '+(p.item.external_ids?.isbn||''))+(p.item.year?' — pedido: '+p.item.year:'')+'</h3>'+(p.candidates.length?'<label>Versão<select data-version="'+k+'">'+p.candidates.map((c,j)=>{const names=[c.title,c.original_title].filter((v,i,a)=>v&&a.indexOf(v)===i).join(' · ');return '<option value="'+j+'">'+esc(names||c.title)+' — '+esc(yearOf(c)||'ano desconhecido')+'</option>';}).join('')+'</select></label><div data-preview="'+k+'"></div>':'<div class="manual" data-manual="'+k+'"><p class="muted">Sem correspondência automática. Podes criar a ficha manualmente; o ISBN será mantido.</p><label>Título *<input data-m-title required></label><label>Autor<input data-m-author></label><label>Editora<input data-m-publisher></label><label>Ano<input data-m-year type="number" min="1000" max="9999"></label><label>Sinopse<textarea data-m-synopsis rows="4"></textarea></label><label>URL da capa (https)<input data-m-cover type="url" placeholder="https://…"></label><div data-m-preview></div></div>')+'</section>').join('');
   const save=document.createElement('button');save.type='button';save.className='btn fill';save.textContent='Adicionar versões selecionadas';save.onclick=commit;panel.append(save);
   plans.forEach((p,k)=>showChoice(p,k));
   panel.querySelectorAll('[data-version]').forEach(control=>control.onchange=async()=>{
@@ -129,11 +129,21 @@ function init(){
    catch(e){control.value=String(plan.index||0);message('Erro: '+e.message);}
    finally{resolving--;panel.querySelectorAll('[data-version]').forEach(n=>n.disabled=resolving>0);save.disabled=resolving>0;}
   });
+  panel.querySelectorAll('[data-m-cover]').forEach(input=>input.addEventListener('change',()=>{
+   const k=Number(input.closest('[data-manual]').dataset.manual),box=input.closest('[data-manual]').querySelector('[data-m-preview]');box.replaceChildren();const value=input.value.trim();if(!value)return;const url=safeURL(value);if(!url||!url.startsWith('https://')){const p=document.createElement('p');p.className='danger';p.textContent='Usa um URL https direto para a imagem.';box.append(p);return;}const img=document.createElement('img');img.src=url;img.alt='Pré-visualização da capa manual';img.style.cssText='width:90px;max-height:140px;object-fit:cover';img.referrerPolicy='no-referrer';img.addEventListener('error',()=>{box.replaceChildren();const p=document.createElement('p');p.className='danger';p.textContent='A imagem não carregou; confirma o URL.';box.append(p);});box.append(img);
+  }));
+ }
+ function manualItem(plan,box){
+  const title=box.querySelector('[data-m-title]').value.trim();
+  if(!title)throw Error('Indica o título do livro para criar a ficha manualmente.');
+  const author=box.querySelector('[data-m-author]').value.trim(),publisher=box.querySelector('[data-m-publisher]').value.trim(),year=box.querySelector('[data-m-year]').value.trim(),synopsis=box.querySelector('[data-m-synopsis]').value.trim(),cover=safeURL(box.querySelector('[data-m-cover]').value.trim())||'';
+  if(cover&&!cover.startsWith('https://'))throw Error('O URL da capa deve começar por https://.');
+  return {...plan.item,title,original_title:title,creators:author?[author]:plan.item.creators,publisher:publisher||plan.item.publisher,year:year?Number(year):plan.item.year,synopsis:synopsis||plan.item.synopsis,cover:cover||plan.item.cover,source_url:''};
  }
  async function commit(){
   if(saving||searching||resolving)return;const ticket=revision;
-  try{guard(owner);if(plans.some(p=>!p.item.title&&!p.chosen))throw Error('Sem título e sem resultado para o ISBN; indica o título para criar a ficha.');saving=true;form.querySelectorAll('button,input,select,textarea').forEach(n=>n.disabled=true);
-   for(const plan of plans){if(plan.saved)continue;guard(owner);if(ticket!==revision)throw Error('A seleção mudou. Volta a pesquisar.');const next=plan.chosen?withVersion(plan.item,plan.chosen):{...plan.item};approved.add(next);await context().account.addPersonal(next);plan.saved=true;}
+  try{guard(owner);saving=true;form.querySelectorAll('button,input,select,textarea').forEach(n=>n.disabled=true);
+   for(const [k,plan] of plans.entries()){if(plan.saved)continue;guard(owner);if(ticket!==revision)throw Error('A seleção mudou. Volta a pesquisar.');let next;if(plan.chosen)next=withVersion(plan.item,plan.chosen);else{const box=panel.querySelector('[data-manual="'+k+'"]');if(!box)throw Error('Sem correspondência e sem formulário manual.');next=manualItem(plan,box);}approved.add(next);await context().account.addPersonal(next);plan.saved=true;}
    guard(owner);form.closest('dialog')?.close();if(typeof window.toast==='function')window.toast('Itens adicionados à tua biblioteca.');
   }catch(e){message('Erro: '+e.message+' Os itens já adicionados não serão repetidos se tentares novamente.');}
   finally{saving=false;form.querySelectorAll('button,input,select,textarea').forEach(n=>n.disabled=false);}
